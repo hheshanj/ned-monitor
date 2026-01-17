@@ -19,19 +19,19 @@ except ImportError:
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("green")
 
-class NetMonitorUltimate(ctk.CTk):
+class Ned(ctk.CTk):
     def __init__(self):
         super().__init__()
 
         # --- FONT CONFIG ---
-        self.FONT_HEADER = ("Segoe UI", 26, "bold")
-        self.FONT_SUBHEAD = ("Segoe UI", 16, "bold")
-        self.FONT_BODY = ("Segoe UI", 12)
-        self.FONT_MONO = ("Segoe UI", 12)
-        self.FONT_BUTTON = ("Segoe UI", 13, "bold")
+        self.FONT_HEADER = ("Lucida Console", 26, "bold")
+        self.FONT_SUBHEAD = ("Lucida Console", 16, "bold")
+        self.FONT_BODY = ("Lucida Console", 12)
+        self.FONT_MONO = ("Lucida Console", 12)
+        self.FONT_BUTTON = ("Lucida Console", 13, "bold")
 
         # Window Setup
-        self.title("NetMonitor Ultimate 💀")
+        self.title("Ned 👓")
         self.geometry("1100x750")
         
         self.grid_columnconfigure(0, weight=1)
@@ -58,9 +58,14 @@ class NetMonitorUltimate(ctk.CTk):
         self.y_dl = collections.deque([0]*60, maxlen=60)
         self.y_ul = collections.deque([0]*60, maxlen=60)
         
-        # Init Tracking
-        self.last_upload = psutil.net_io_counters().bytes_sent
-        self.last_download = psutil.net_io_counters().bytes_recv
+        # --- INIT TRACKING (NEW) ---
+        # We capture the system totals at the moment the app starts
+        net_io = psutil.net_io_counters()
+        self.start_upload = net_io.bytes_sent
+        self.start_download = net_io.bytes_recv
+        
+        self.last_upload = self.start_upload
+        self.last_download = self.start_download
         self.last_time = time.time()
         
         # Start Loop
@@ -71,16 +76,23 @@ class NetMonitorUltimate(ctk.CTk):
     # ==========================
     def setup_dashboard(self):
         self.tab_dash.grid_columnconfigure((0, 1), weight=1)
-        self.tab_dash.grid_rowconfigure(1, weight=1)
+        self.tab_dash.grid_rowconfigure(2, weight=1) # Graph expands
         
-        # Labels
+        # --- Speed Labels ---
         self.dl_label = ctk.CTkLabel(self.tab_dash, text="⬇ 0 KB/s", font=self.FONT_HEADER, text_color="#00ff00")
-        self.dl_label.grid(row=0, column=0, pady=10)
+        self.dl_label.grid(row=0, column=0, pady=(20, 5))
         
         self.ul_label = ctk.CTkLabel(self.tab_dash, text="⬆ 0 KB/s", font=self.FONT_HEADER, text_color="#ff9900")
-        self.ul_label.grid(row=0, column=1, pady=10)
+        self.ul_label.grid(row=0, column=1, pady=(20, 5))
 
-        # Graph
+        # --- Session Totals (NEW) ---
+        self.total_dl_label = ctk.CTkLabel(self.tab_dash, text="Total: 0 MB", font=self.FONT_BODY, text_color="#88ff88")
+        self.total_dl_label.grid(row=1, column=0, pady=(0, 20))
+        
+        self.total_ul_label = ctk.CTkLabel(self.tab_dash, text="Total: 0 MB", font=self.FONT_BODY, text_color="#ffcc88")
+        self.total_ul_label.grid(row=1, column=1, pady=(0, 20))
+
+        # --- Graph ---
         self.fig = Figure(figsize=(5, 3), dpi=100, facecolor='#2b2b2b')
         self.ax = self.fig.add_subplot(111)
         self.ax.set_facecolor('#2b2b2b')
@@ -92,17 +104,16 @@ class NetMonitorUltimate(ctk.CTk):
         
         self.line_dl, = self.ax.plot([], [], color='#00ff00', linewidth=2, label='Download')
         self.line_ul, = self.ax.plot([], [], color='#ff9900', linewidth=2, label='Upload')
-        self.ax.legend(facecolor='#2b2b2b', labelcolor='white', prop={'family': 'Segoe UI', 'size': 10})
+        self.ax.legend(facecolor='#2b2b2b', labelcolor='white', prop={'family': 'Consolas', 'size': 10})
         self.ax.grid(True, color='#444444', linestyle='--', linewidth=0.5)
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.tab_dash)
-        self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
+        self.canvas.get_tk_widget().grid(row=2, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
 
         # Kill Switch
         self.kill_btn = ctk.CTkButton(self.tab_dash, text="💀 PANIC (KILL INTERNET)", font=self.FONT_BUTTON, 
                                       fg_color="#cf0000", hover_color="#8a0000", height=50, command=self.kill_switch)
-        self.kill_btn.grid(row=2, column=0, columnspan=2, pady=20)
-
+        self.kill_btn.grid(row=3, column=0, columnspan=2, pady=20)
     # ==========================
     # TAB 2: APP MANAGER (BEAUTIFIED)
     # ==========================
@@ -268,6 +279,17 @@ class NetMonitorUltimate(ctk.CTk):
         entry.configure(state="readonly")
         entry.pack(side="left", padx=20, pady=5)
 
+    def format_bytes(self, size):
+        # 1024^2 = 1,048,576 (MB)
+        # 1024^3 = 1,073,741,824 (GB)
+        power = 2**10
+        n = 0
+        power_labels = {0 : '', 1: 'KB', 2: 'MB', 3: 'GB', 4: 'TB'}
+        while size > power:
+            size /= power
+            n += 1
+        return f"{size:.2f} {power_labels[n]}"
+
     # ==========================
     # TAB 4: SCANNER (BEAUTIFIED)
     # ==========================
@@ -333,16 +355,29 @@ class NetMonitorUltimate(ctk.CTk):
     # ==========================
     def monitor_loop(self):
         try:
-            u = psutil.net_io_counters().bytes_sent
-            d = psutil.net_io_counters().bytes_recv
+            # Get current system-wide totals
+            net_io = psutil.net_io_counters()
+            u = net_io.bytes_sent
+            d = net_io.bytes_recv
             t = time.time()
             
+            # 1. Calculate Speed (Instantaneous)
             us = (u - self.last_upload) / 1024 / (t - self.last_time)
             ds = (d - self.last_download) / 1024 / (t - self.last_time)
             
+            # 2. Calculate Session Total (Accumulated)
+            session_ul = u - self.start_upload
+            session_dl = d - self.start_download
+            
+            # Update Speed Labels
             self.dl_label.configure(text=f"⬇ {ds:.1f} KB/s")
             self.ul_label.configure(text=f"⬆ {us:.1f} KB/s")
+
+            # Update Session Labels (NEW)
+            self.total_dl_label.configure(text=f"Total: {self.format_bytes(session_dl)}")
+            self.total_ul_label.configure(text=f"Total: {self.format_bytes(session_ul)}")
             
+            # Update Graph
             self.y_dl.append(ds)
             self.y_ul.append(us)
             self.line_dl.set_data(self.x_data, self.y_dl)
@@ -352,15 +387,14 @@ class NetMonitorUltimate(ctk.CTk):
             self.ax.set_ylim(0, peak * 1.2)
             self.canvas.draw()
             
+            # Reset for next loop
             self.last_upload, self.last_download, self.last_time = u, d, t
-        except: pass
+        except Exception as e:
+            print(e)
+            pass
+            
         self.after(1000, self.monitor_loop)
 
-    def kill_switch(self):
-        os.system("ipconfig /release")
-        self.dl_label.configure(text="KILLED", text_color="red")
-        self.ul_label.configure(text="OFFLINE", text_color="red")
-
 if __name__ == "__main__":
-    app = NetMonitorUltimate()
+    app = Ned()
     app.mainloop()
