@@ -1,50 +1,81 @@
-# Ned 👓 | Ultimate Network Monitor
+# ⚡ Ned
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)
-![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge&logo=windows)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-
-**Ned** is a Python-based network utility tool designed for real-time monitoring, traffic analysis, and process management. Built with a cyberpunk-inspired UI, it combines the functionality of Task Manager, Wireshark, and NetLimiter into one lightweight dashboard.
+**Ned** is a Python-based network utility built for real-time monitoring, traffic analysis, and process control — all wrapped in a cyberpunk-inspired dashboard.
 
 ---
 
-## 📸 Screenshots
+## 🧠 What is Ned?
 
-![Dashboard Screenshot](https://via.placeholder.com/800x400?text=Dashboard+Screenshot+Here)
-![App Manager Screenshot](https://via.placeholder.com/800x400?text=App+Manager+Screenshot+Here)
+Ned is designed for developers, cyber security students, and power users who want **instant visibility** into what their system and network are doing — without juggling multiple tools.
 
----
+It provides a unified dashboard for:
+- Network traffic monitoring
+- Process-level insights
+- System resource awareness
 
-## ⚡ Features
-
-### 1. 📊 Real-Time Dashboard
-- **Live Traffic Graph:** Visualizes download/upload speeds in real-time using `matplotlib`.
-- **Session Tracking:** Tracks total data consumed (MB/GB) per session.
-- **Panic Button:** Instant "Kill Switch" to sever all internet connections via the OS network adapter.
-
-### 2. 🛡️ App Manager (Firewall Control)
-- **Active Process Scan:** Identifies specific applications currently consuming bandwidth.
-- **Force Quit:** Terminate processes directly from the UI.
-- **Firewall Integration:** Block/Unblock internet access for specific apps using Windows Firewall rules (`netsh`).
-
-### 3. 🔗 Connection Sniffer
-- **Live Netstat:** Displays all active `ESTABLISHED` connections.
-- **Process ID Mapping:** Maps connections to specific PIDs.
-- **Copy-Paste UI:** Selectable IP addresses and ports for easy WHOIS lookups.
-
-### 4. 📡 LAN Scanner
-- **ARP Table Dump:** Scans the local network for connected devices.
-- **Device Identification:** Lists IP, MAC Address, and connection type (Dynamic/Static).
+All in real time. No fluff.
 
 ---
 
-## 🛠️ Installation
+## ✨ Features
 
-### Prerequisites
-- Python 3.x
-- Windows OS (Required for Firewall/Netsh commands)
+- 📡 **Live Network Monitoring**  
+  Track incoming and outgoing traffic in real time.
 
-### 1. Clone the repo
+- 🧩 **Traffic Analysis**  
+  Inspect network behavior without diving into heavyweight tools.
+
+- ⚙️ **Process Management**  
+  View and manage active processes from a single interface.
+
+- 🚀 **Lightweight & Fast**  
+  Built to run smooth without cooking your system.
+
+---
+
+## 🛠 Tech Stack
+
+- **Python**
+- System & network monitoring libraries  
+- Custom UI layer (cyberpunk-themed)
+
+---
+## 🔑 Prerequisites
+
+Before running **Ned**, ensure you have the following installed:
+
+- 🐍 **Python 3.9 or higher**
+- 🖥️ **Supported Operating Systems**
+  - Windows (recommended)
+  - Linux
+  - macOS (limited support)
+
+- 🔐 **Administrator / Root Privileges**  
+  Required for network monitoring, traffic analysis, and process control features.
+
+- 📦 **Python Dependencies**
+
+Install the required libraries using pip:
+
 ```bash
-git clone [https://github.com/yourusername/Ned-Monitor.git](https://github.com/yourusername/Ned-Monitor.git)
-cd Ned-Monitor
+pip install customtkinter psutil matplotlib
+
+
+Ned is intended for **educational and personal use**.  
+Use responsibly and only on systems and networks you own or have permission to monitor.
+
+---
+
+## 🧑‍💻 Author
+
+Built by **Heshan**  
+Cyber Security student • Tech enthusiast • Builder of things that glow
+
+---
+
+## ⭐ Support
+
+If you find this project useful:
+- Star the repo ⭐
+- Fork it 🍴
+- Or just lurk respectfully 😌
