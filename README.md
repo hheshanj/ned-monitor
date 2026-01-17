@@ -4,7 +4,7 @@
 ![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge&logo=windows)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-**Ned** is a Python-based network utility tool designed for real-time monitoring, traffic analysis, and process management. Built with a cyberpunk-inspired UI, it combines the functionality of Task Manager, Wireshark, and NetLimiter into one lightweight dashboard.
+**Ned** is a Python-based network utility tool designed for real-time monitoring, traffic analysis, and process management. It combines the functionality of Task Manager, Wireshark, and NetLimiter into one lightweight dashboard.
 
 ---
 
