@@ -8,11 +8,6 @@
 
 ---
 
-## 📸 Screenshots
-
-*(Add screenshots of your Dashboard and App Manager here)*
-
----
 
 ## ⚡ Features
 
@@ -37,6 +32,7 @@
 
 ---
 
+
 ## 🛠️ Installation
 
 ### Prerequisites
@@ -44,21 +40,26 @@
 - Windows OS (Required for Firewall/Netsh commands)
 
 ### 1. Clone the repo
+
 ```bash
 git clone [https://github.com/yourusername/Ned-Monitor.git](https://github.com/yourusername/Ned-Monitor.git)
 cd Ned-Monitor
 ```
 ### 2. Install Dependancies
+
 ```bash
 pip install customtkinter psutil matplotlib
 ```
 ### 3. Usage
 ⭕ IMPORTANT: You must run this app as Administrator. Ned interacts with the Windows Firewall and Network Adapter. Without admin privileges, the "Block", "Unblock", and "Panic" features will fail.
+
 ```bash
 # Open Command Prompt as Administrator
 python ned.py
 ```
 
+
+---
 ⚠️ Disclaimer
 This tool is for educational and network management purposes. Blocking network connections or scanning networks you do not own may violate policies. Use responsibly.
 
