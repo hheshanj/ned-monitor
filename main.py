@@ -24,11 +24,11 @@ class NetMonitorUltimate(ctk.CTk):
         super().__init__()
 
         # --- FONT CONFIG ---
-        self.FONT_HEADER = ("Consolas", 26, "bold")
-        self.FONT_SUBHEAD = ("Consolas", 16, "bold")
-        self.FONT_BODY = ("Consolas", 12)
-        self.FONT_MONO = ("Consolas", 12)
-        self.FONT_BUTTON = ("Consolas", 13, "bold")
+        self.FONT_HEADER = ("Segoe UI", 26, "bold")
+        self.FONT_SUBHEAD = ("Segoe UI", 16, "bold")
+        self.FONT_BODY = ("Segoe UI", 12)
+        self.FONT_MONO = ("Segoe UI", 12)
+        self.FONT_BUTTON = ("Segoe UI", 13, "bold")
 
         # Window Setup
         self.title("NetMonitor Ultimate 💀")
@@ -92,7 +92,7 @@ class NetMonitorUltimate(ctk.CTk):
         
         self.line_dl, = self.ax.plot([], [], color='#00ff00', linewidth=2, label='Download')
         self.line_ul, = self.ax.plot([], [], color='#ff9900', linewidth=2, label='Upload')
-        self.ax.legend(facecolor='#2b2b2b', labelcolor='white', prop={'family': 'Consolas', 'size': 10})
+        self.ax.legend(facecolor='#2b2b2b', labelcolor='white', prop={'family': 'Segoe UI', 'size': 10})
         self.ax.grid(True, color='#444444', linestyle='--', linewidth=0.5)
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.tab_dash)
@@ -147,7 +147,7 @@ class NetMonitorUltimate(ctk.CTk):
             f.pack(fill="x", pady=4, padx=5)
             
             ctk.CTkLabel(f, text=f"📦 {name}", font=self.FONT_BODY).pack(side="left", padx=10, pady=10)
-            ctk.CTkButton(f, text="BLOCK", width=60, font=("Consolas", 11, "bold"), fg_color="#ff9900", hover_color="#b36b00",
+            ctk.CTkButton(f, text="BLOCK", width=60, font=("Segoe UI", 11, "bold"), fg_color="#ff9900", hover_color="#b36b00",
                           command=lambda n=name, p=path: self.block_app(n, p)).pack(side="right", padx=10)
 
         # 2. Blocked Rules
@@ -168,7 +168,7 @@ class NetMonitorUltimate(ctk.CTk):
                     f.pack(fill="x", pady=4, padx=5)
                     
                     ctk.CTkLabel(f, text=f"🔒 {app_name}", font=self.FONT_BODY, text_color="#ffcccc").pack(side="left", padx=10, pady=10)
-                    ctk.CTkButton(f, text="UNBLOCK", width=70, font=("Consolas", 11, "bold"), fg_color="#2eb82e", hover_color="#238f23",
+                    ctk.CTkButton(f, text="UNBLOCK", width=70, font=("Segoe UI", 11, "bold"), fg_color="#2eb82e", hover_color="#238f23",
                                   command=lambda r=rule_name: self.unblock_app(r)).pack(side="right", padx=10)
             if not found:
                  ctk.CTkLabel(self.blocked_frame, text="No apps blocked.", font=self.FONT_BODY, text_color="gray").pack(pady=20)
@@ -207,17 +207,17 @@ class NetMonitorUltimate(ctk.CTk):
         top_bar.grid(row=0, column=0, sticky="ew", padx=10, pady=5)
         
         ctk.CTkButton(top_bar, text="🔄 Refresh Table", font=self.FONT_BUTTON, command=self.get_conns).pack(side="left")
-        ctk.CTkLabel(top_bar, text="Only showing ESTABLISHED connections", text_color="gray", font=("Consolas", 10)).pack(side="right", padx=10)
+        ctk.CTkLabel(top_bar, text="Only showing ESTABLISHED connections", text_color="gray", font=("Segoe UI", 10)).pack(side="right", padx=10)
         
         # Headers
         header_frame = ctk.CTkFrame(self.tab_conn, height=30, fg_color="#1a1a1a")
         header_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(5,0))
         
         # Using Labels for headers is fine (you don't usually copy headers)
-        ctk.CTkLabel(header_frame, text="LOCAL PORT", width=100, font=("Consolas", 11, "bold"), anchor="w").pack(side="left", padx=10)
-        ctk.CTkLabel(header_frame, text="REMOTE IP", width=200, font=("Consolas", 11, "bold"), anchor="w").pack(side="left", padx=10)
-        ctk.CTkLabel(header_frame, text="STATUS", width=100, font=("Consolas", 11, "bold"), anchor="w").pack(side="left", padx=10)
-        ctk.CTkLabel(header_frame, text="PID", width=80, font=("Consolas", 11, "bold"), anchor="w").pack(side="left", padx=10)
+        ctk.CTkLabel(header_frame, text="LOCAL PORT", width=100, font=("Segoe UI", 11, "bold"), anchor="w").pack(side="left", padx=10)
+        ctk.CTkLabel(header_frame, text="REMOTE IP", width=200, font=("Segoe UI", 11, "bold"), anchor="w").pack(side="left", padx=10)
+        ctk.CTkLabel(header_frame, text="STATUS", width=100, font=("Segoe UI", 11, "bold"), anchor="w").pack(side="left", padx=10)
+        ctk.CTkLabel(header_frame, text="PID", width=80, font=("Segoe UI", 11, "bold"), anchor="w").pack(side="left", padx=10)
 
         # Scrollable Area
         self.conn_scroll = ctk.CTkScrollableFrame(self.tab_conn, fg_color="transparent")
@@ -265,24 +265,28 @@ class NetMonitorUltimate(ctk.CTk):
         entry = ctk.CTkEntry(parent, width=width, font=self.FONT_MONO, text_color=color,
                              fg_color="transparent", border_width=0)
         entry.insert(0, text)
-        entry.configure(state="readonly") # Make it read-only AFTER inserting text
-        entry.pack(side="left", padx=10, pady=5)
+        entry.configure(state="readonly")
+        entry.pack(side="left", padx=20, pady=5)
 
     # ==========================
     # TAB 4: SCANNER (BEAUTIFIED)
     # ==========================
     def setup_scanner(self):
         self.tab_scan.grid_columnconfigure(0, weight=1)
-        self.tab_scan.grid_rowconfigure(2, weight=1)
+        # Ensure the list row expands to fill empty space
+        self.tab_scan.grid_rowconfigure(0, weight=0) # Button
+        self.tab_scan.grid_rowconfigure(1, weight=0) # Headers
+        self.tab_scan.grid_rowconfigure(2, weight=1) # List (Expands)
 
         ctk.CTkButton(self.tab_scan, text="📡 Scan Local Network (ARP)", font=self.FONT_BUTTON, command=self.run_scan).grid(row=0, column=0, pady=20)
         
         # Headers
         h_frame = ctk.CTkFrame(self.tab_scan, height=30, fg_color="#1a1a1a")
         h_frame.grid(row=1, column=0, sticky="ew", padx=20)
-        ctk.CTkLabel(h_frame, text="IP ADDRESS", width=200, font=("Consolas", 11, "bold"), anchor="w").pack(side="left", padx=20)
-        ctk.CTkLabel(h_frame, text="MAC ADDRESS", width=200, font=("Consolas", 11, "bold"), anchor="w").pack(side="left", padx=20)
-        ctk.CTkLabel(h_frame, text="TYPE", width=100, font=("Consolas", 11, "bold"), anchor="w").pack(side="left", padx=20)
+        
+        ctk.CTkLabel(h_frame, text="IP ADDRESS", width=200, font=("Segoe UI", 11, "bold"), anchor="w").pack(side="left", padx=20)
+        ctk.CTkLabel(h_frame, text="MAC ADDRESS", width=200, font=("Segoe UI", 11, "bold"), anchor="w").pack(side="left", padx=20)
+        ctk.CTkLabel(h_frame, text="TYPE", width=100, font=("Segoe UI", 11, "bold"), anchor="w").pack(side="left", padx=20)
 
         # Results Area
         self.scan_scroll = ctk.CTkScrollableFrame(self.tab_scan, fg_color="transparent")
@@ -309,14 +313,19 @@ class NetMonitorUltimate(ctk.CTk):
                     
                     icon = "🖥️" if type_ == 'dynamic' else "⚙️"
                     
-                    ctk.CTkLabel(card, text=f"{icon} {ip}", width=200, font=self.FONT_MONO, anchor="w", text_color="#00ccff").pack(side="left", padx=20, pady=8)
-                    ctk.CTkLabel(card, text=mac, width=200, font=self.FONT_MONO, anchor="w", text_color="white").pack(side="left", padx=20)
+                    # IP Address (Selectable)
+                    self.create_selectable_label(card, f"{icon} {ip}", 200, "#00ccff")
+
+                    # MAC Address (Selectable)
+                    self.create_selectable_label(card, mac, 200, "white")
+                    
+                    # Type (Label is fine, usually don't need to copy 'dynamic')
                     ctk.CTkLabel(card, text=type_.upper(), width=100, font=self.FONT_MONO, anchor="w", text_color="gray").pack(side="left", padx=20)
 
             if not found_any:
                 ctk.CTkLabel(self.scan_scroll, text="No devices found or ARP table empty.", font=self.FONT_BODY).pack(pady=20)
 
-        except: 
+        except Exception as e: 
              ctk.CTkLabel(self.scan_scroll, text="Scan failed.", text_color="red").pack(pady=20)
 
     # ==========================
