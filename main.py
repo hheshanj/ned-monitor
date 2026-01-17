@@ -1,17 +1,36 @@
 import customtkinter as ctk
 import psutil
+import threading
+import time
 import os
 import subprocess
+import collections
 from tkinter import messagebox
 
-# ... (Keep your previous imports like threading, time, etc.)
+# 1. Safe Import for Matplotlib (Common crash point)
+try:
+    from matplotlib.figure import Figure
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+except ImportError:
+    messagebox.showerror("Missing Library", "Bro, you forgot to install matplotlib!\nRun: pip install matplotlib")
+    exit()
+
+# --- CONFIG ---
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("green")
 
 class NetMonitorUltimate(ctk.CTk):
     def __init__(self):
         super().__init__()
-        
+
+        self.MAIN_FONT = ("Segoe UI", 14)
+        self.HEADER_FONT = ("Segoe UI", 24, "bold")
+
+
+
+        # Window Setup
         self.title("NetMonitor Ultimate 💀")
-        self.geometry("900x700")
+        self.geometry("1000x700")
         
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -21,130 +40,208 @@ class NetMonitorUltimate(ctk.CTk):
         self.tabview.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
         
         self.tab_dash = self.tabview.add("Dashboard")
-        self.tab_apps = self.tabview.add("App Manager")  # <--- NEW TAB
+        self.tab_apps = self.tabview.add("App Manager")
+        self.tab_conn = self.tabview.add("Connections")
+        self.tab_scan = self.tabview.add("LAN Scanner")
         
-        # Setup Tabs
+        # Setup Functions
         self.setup_dashboard()
-        self.setup_app_manager() # <--- NEW FUNCTION
+        self.setup_app_manager()
+        self.setup_connections()
+        self.setup_scanner()
 
-        # ... (Keep your existing loop logic) ...
+        # Data for Graphs
+        self.x_data = list(range(60))
+        self.y_dl = collections.deque([0]*60, maxlen=60)
+        self.y_ul = collections.deque([0]*60, maxlen=60)
+        
+        # Init Tracking
+        self.last_upload = psutil.net_io_counters().bytes_sent
+        self.last_download = psutil.net_io_counters().bytes_recv
+        self.last_time = time.time()
+        
+        # Start Loop
+        self.monitor_loop()
 
-    # ... (Keep setup_dashboard code from before) ...
+    # ==========================
+    # TAB 1: DASHBOARD
+    # ==========================
+    def setup_dashboard(self):
+        self.tab_dash.grid_columnconfigure((0, 1), weight=1)
+        self.tab_dash.grid_rowconfigure(1, weight=1)
+        
+        # Labels
+        self.dl_label = ctk.CTkLabel(self.tab_dash, text="⬇ 0 KB/s", font=self.MAIN_FONT, text_color="#00ff00")
+        self.dl_label.grid(row=0, column=0, pady=10)
+        
+        self.ul_label = ctk.CTkLabel(self.tab_dash, text="⬆ 0 KB/s", font=self.MAIN_FONT, text_color="#ff9900")
+        self.ul_label.grid(row=0, column=1, pady=10)
 
-    # --- NEW: APP MANAGER TAB ---
-  # --- APP MANAGER TAB (Updated) ---
+        # Graph
+        self.fig = Figure(figsize=(5, 3), dpi=100, facecolor='#2b2b2b')
+        self.ax = self.fig.add_subplot(111)
+        self.ax.set_facecolor('#2b2b2b')
+        self.ax.tick_params(colors='white', labelcolor='white')
+        self.ax.spines['bottom'].set_color('white')
+        self.ax.spines['left'].set_color('white')
+        
+        self.line_dl, = self.ax.plot([], [], color='#00ff00', label='Download')
+        self.line_ul, = self.ax.plot([], [], color='#ff9900', label='Upload')
+        self.ax.legend(facecolor='#2b2b2b', labelcolor='white')
+        
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.tab_dash)
+        self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
+
+        # Kill Switch
+        self.kill_btn = ctk.CTkButton(self.tab_dash, text="💀 PANIC (KILL INTERNET)", fg_color="red", hover_color="darkred", command=self.kill_switch, font=self.MAIN_FONT)
+        self.kill_btn.grid(row=2, column=0, columnspan=2, pady=20)
+
+    # ==========================
+    # TAB 2: APP MANAGER (Blocker)
+    # ==========================
     def setup_app_manager(self):
-        self.tab_apps.grid_columnconfigure((0, 1), weight=1) # Split into 2 columns
+        self.tab_apps.grid_columnconfigure((0, 1), weight=1)
         self.tab_apps.grid_rowconfigure(1, weight=1)
         
-        # --- CONTROLS ---
+        # Controls
         self.control_frame = ctk.CTkFrame(self.tab_apps)
         self.control_frame.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
         
-        self.refresh_btn = ctk.CTkButton(self.control_frame, text="🔄 Refresh All", command=self.refresh_all_apps)
+        self.refresh_btn = ctk.CTkButton(self.control_frame, text="🔄 Refresh Lists", command=self.refresh_all_apps, font=self.MAIN_FONT)
         self.refresh_btn.pack(side="left", padx=10, pady=10)
         
-        self.admin_label = ctk.CTkLabel(self.control_frame, text="⚠️ Admin Rights Required", text_color="orange")
-        self.admin_label.pack(side="right", padx=10)
+        ctk.CTkLabel(self.control_frame, text="⚠️ Admin Rights Required for Blocking", text_color="orange").pack(side="right", padx=10),
 
-        # --- LEFT: ACTIVE APPS ---
-        self.active_frame = ctk.CTkScrollableFrame(self.tab_apps, label_text="🟢 Active Data Hogs")
+        # Lists
+        self.active_frame = ctk.CTkScrollableFrame(self.tab_apps, label_text="🟢 Active Apps")
         self.active_frame.grid(row=1, column=0, padx=(10, 5), pady=10, sticky="nsew")
 
-        # --- RIGHT: BLOCKED RULES ---
-        self.blocked_frame = ctk.CTkScrollableFrame(self.tab_apps, label_text="🔴 Blocked / Jailed")
+        self.blocked_frame = ctk.CTkScrollableFrame(self.tab_apps, label_text="🔴 Blocked Apps")
         self.blocked_frame.grid(row=1, column=1, padx=(5, 10), pady=10, sticky="nsew")
 
     def refresh_all_apps(self):
-        self.scan_active_apps()
-        self.scan_blocked_rules()
-
-    # --- 1. SCAN ACTIVE APPS ---
-    def scan_active_apps(self):
-        for widget in self.active_frame.winfo_children(): widget.destroy()
-
+        # 1. Active Apps
+        for w in self.active_frame.winfo_children(): w.destroy()
         active_apps = {}
         try:
             for conn in psutil.net_connections(kind='inet'):
                 if conn.status == 'ESTABLISHED':
                     try:
-                        proc = psutil.Process(conn.pid)
-                        active_apps[proc.name()] = {'pid': conn.pid, 'path': proc.exe()}
+                        p = psutil.Process(conn.pid)
+                        active_apps[p.name()] = p.exe()
                     except: pass
         except: pass
-
-        for name, data in active_apps.items():
-            self.create_active_row(name, data['pid'], data['path'])
-            
-        if not active_apps:
-            ctk.CTkLabel(self.active_frame, text="No active connections.").pack(pady=10)
-
-    def create_active_row(self, name, pid, path):
-        f = ctk.CTkFrame(self.active_frame)
-        f.pack(fill="x", pady=2)
         
-        ctk.CTkLabel(f, text=f"{name}", font=("Consolas", 12, "bold")).pack(side="left", padx=5)
-        
-        # BLOCK BUTTON
-        ctk.CTkButton(f, text="🛡️ BLOCK", width=60, fg_color="#ff9900", hover_color="#b36b00",
-                      command=lambda: self.block_app(name, path)).pack(side="right", padx=5, pady=2)
+        for name, path in active_apps.items():
+            f = ctk.CTkFrame(self.active_frame)
+            f.pack(fill="x", pady=2)
+            ctk.CTkLabel(f, text=name, font=("Segoe UI", 12)).pack(side="left", padx=5)
+            # Use partial function to safely pass arguments
+            ctk.CTkButton(f, text="🛡️ BLOCK", width=60, fg_color="#ff9900", command=lambda n=name, p=path: self.block_app(n, p)).pack(side="right", padx=5)
 
-    # --- 2. SCAN BLOCKED RULES ---
-    def scan_blocked_rules(self):
-        for widget in self.blocked_frame.winfo_children(): widget.destroy()
-
-        # We use netsh to list rules and parse the text output
-        # Look for rules named "Block_X_PythonTool"
+        # 2. Blocked Rules
+        for w in self.blocked_frame.winfo_children(): w.destroy()
         try:
-            # Run command, hide window
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            output = subprocess.check_output('netsh advfirewall firewall show rule name=all', startupinfo=startupinfo).decode('utf-8', errors='ignore')
             
-            output = subprocess.check_output('netsh advfirewall firewall show rule name=all', 
-                                           startupinfo=startupinfo).decode('utf-8', errors='ignore')
-            
-            # Simple parsing logic
-            found_rules = []
             for line in output.split('\n'):
                 if "Rule Name:" in line and "_PythonTool" in line:
                     rule_name = line.split("Rule Name:")[1].strip()
                     app_name = rule_name.replace("Block_", "").replace("_PythonTool", "")
-                    found_rules.append((rule_name, app_name))
+                    
+                    f = ctk.CTkFrame(self.blocked_frame)
+                    f.pack(fill="x", pady=2)
+                    ctk.CTkLabel(f, text=app_name, text_color="red").pack(side="left", padx=5)
+                    ctk.CTkButton(f, text="🔓 UNBLOCK", width=70, fg_color="green", command=lambda r=rule_name: self.unblock_app(r)).pack(side="right", padx=5)
+        except:
+            pass
 
-            for rule, app in found_rules:
-                self.create_blocked_row(rule, app)
-                
-            if not found_rules:
-                ctk.CTkLabel(self.blocked_frame, text="No active blocks.").pack(pady=10)
-
-        except Exception as e:
-            ctk.CTkLabel(self.blocked_frame, text="Error reading Firewall").pack()
-
-    def create_blocked_row(self, rule_name, app_name):
-        f = ctk.CTkFrame(self.blocked_frame)
-        f.pack(fill="x", pady=2)
-        
-        ctk.CTkLabel(f, text=f"{app_name}", text_color="red").pack(side="left", padx=5)
-        
-        # UNBLOCK BUTTON
-        ctk.CTkButton(f, text="🔓 UNBLOCK", width=70, fg_color="green", hover_color="darkgreen",
-                      command=lambda: self.unblock_app(rule_name)).pack(side="right", padx=5, pady=2)
-
-    # --- ACTIONS ---
     def block_app(self, name, path):
-        rule_name = f"Block_{name}_PythonTool"
-        cmd = f'netsh advfirewall firewall add rule name="{rule_name}" dir=out action=block program="{path}" enable=yes'
+        rule = f"Block_{name}_PythonTool"
+        cmd = f'netsh advfirewall firewall add rule name="{rule}" dir=out action=block program="{path}" enable=yes'
         self.run_netsh(cmd)
-        self.refresh_all_apps() # Move from Active -> Blocked list
+        self.refresh_all_apps()
 
-    def unblock_app(self, rule_name):
-        cmd = f'netsh advfirewall firewall delete rule name="{rule_name}"'
+    def unblock_app(self, rule):
+        cmd = f'netsh advfirewall firewall delete rule name="{rule}"'
         self.run_netsh(cmd)
-        self.refresh_all_apps() # Remove from Blocked list
+        self.refresh_all_apps()
 
     def run_netsh(self, cmd):
         try:
             subprocess.run(cmd, shell=True, check=True, creationflags=subprocess.CREATE_NO_WINDOW)
         except:
             messagebox.showerror("Error", "Action Failed. Run as Admin!")
-# ... (Run app logic)
+
+    # ==========================
+    # TAB 3: CONNECTIONS
+    # ==========================
+    def setup_connections(self):
+        self.tab_conn.grid_columnconfigure(0, weight=1)
+        self.tab_conn.grid_rowconfigure(1, weight=1)
+        ctk.CTkButton(self.tab_conn, text="🔄 Refresh", command=self.get_conns).grid(row=0, column=0, pady=10)
+        self.conn_text = ctk.CTkTextbox(self.tab_conn, font=("Segoe UI", 12))
+        self.conn_text.grid(row=1, column=0, sticky="nsew")
+
+    def get_conns(self):
+        # FIX: Changed "0.0" to "1.0"
+        self.conn_text.delete("1.0", "end")
+        self.conn_text.insert("1.0", f"{'L.PORT':<10} {'REMOTE IP':<25} {'STATUS':<15} {'PID'}\n" + "-"*60 + "\n")
+        try:
+            for c in psutil.net_connections(kind='inet'):
+                if c.status == 'ESTABLISHED':
+                    r = f"{c.raddr.ip}:{c.raddr.port}" if c.raddr else "N/A"
+                    self.conn_text.insert("end", f"{c.laddr.port:<10} {r:<25} {c.status:<15} {c.pid}\n")
+        except: self.conn_text.insert("end", "Error reading connections.")
+
+    # ==========================
+    # TAB 4: SCANNER
+    # ==========================
+    def setup_scanner(self):
+        self.tab_scan.grid_columnconfigure(0, weight=1)
+        ctk.CTkButton(self.tab_scan, text="📡 Scan Network", command=self.run_scan).grid(row=0, column=0, pady=10)
+        self.scan_text = ctk.CTkTextbox(self.tab_scan, font=("Segoe UI", 12))
+        self.scan_text.grid(row=1, column=0, sticky="nsew")
+
+    def run_scan(self):
+        # FIX: Changed "0.0" to "1.0"
+        self.scan_text.delete("1.0", "end")
+        try:
+            self.scan_text.insert("1.0", os.popen('arp -a').read())
+        except: self.scan_text.insert("1.0", "Scan failed.")
+
+    # ==========================
+    # CORE LOOP
+    # ==========================
+    def monitor_loop(self):
+        try:
+            u = psutil.net_io_counters().bytes_sent
+            d = psutil.net_io_counters().bytes_recv
+            t = time.time()
+            
+            us = (u - self.last_upload) / 1024 / (t - self.last_time)
+            ds = (d - self.last_download) / 1024 / (t - self.last_time)
+            
+            self.dl_label.configure(text=f"⬇ {ds:.1f} KB/s")
+            self.ul_label.configure(text=f"⬆ {us:.1f} KB/s")
+            
+            self.y_dl.append(ds)
+            self.y_ul.append(us)
+            self.line_dl.set_data(self.x_data, self.y_dl)
+            self.line_ul.set_data(self.x_data, self.y_ul)
+            self.ax.set_ylim(0, max(max(self.y_dl), max(self.y_ul), 10) * 1.2)
+            self.canvas.draw()
+            
+            self.last_upload, self.last_download, self.last_time = u, d, t
+        except: pass
+        self.after(1000, self.monitor_loop)
+
+    def kill_switch(self):
+        os.system("ipconfig /release")
+        self.dl_label.configure(text="KILLED", text_color="red")
+
+if __name__ == "__main__":
+    app = NetMonitorUltimate()
+    app.mainloop()
