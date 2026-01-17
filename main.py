@@ -7,30 +7,31 @@ import subprocess
 import collections
 from tkinter import messagebox
 
-# 1. Safe Import for Matplotlib (Common crash point)
+# Safe Import for Matplotlib
 try:
     from matplotlib.figure import Figure
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 except ImportError:
-    messagebox.showerror("Missing Library", "Bro, you forgot to install matplotlib!\nRun: pip install matplotlib")
+    messagebox.showerror("Missing Library", "Run: pip install matplotlib")
     exit()
 
-# --- CONFIG ---
+# --- THEME CONFIG ---
 ctk.set_appearance_mode("Dark")
-ctk.set_default_color_theme("green")
+ctk.set_default_color_theme("green") 
 
 class NetMonitorUltimate(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.MAIN_FONT = ("Segoe UI", 14)
-        self.HEADER_FONT = ("Segoe UI", 24, "bold")
-
-
+        # --- FONT CONFIG (Change these to swap vibes) ---
+        self.FONT_HEADER = ("Segoe UI", 26, "bold")
+        self.FONT_SUBHEAD = ("Segoe UI", 18, "bold")
+        self.FONT_BODY = ("Segoe UI", 12)
+        self.FONT_BUTTON = ("Segoe UI", 13, "bold")
 
         # Window Setup
         self.title("NetMonitor Ultimate 💀")
-        self.geometry("1000x700")
+        self.geometry("1000x720")
         
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -38,13 +39,14 @@ class NetMonitorUltimate(ctk.CTk):
         # --- TABS ---
         self.tabview = ctk.CTkTabview(self)
         self.tabview.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+        self.tabview._segmented_button.configure(font=self.FONT_BUTTON) # Change tab font
         
         self.tab_dash = self.tabview.add("Dashboard")
         self.tab_apps = self.tabview.add("App Manager")
         self.tab_conn = self.tabview.add("Connections")
         self.tab_scan = self.tabview.add("LAN Scanner")
         
-        # Setup Functions
+        # Setup Views
         self.setup_dashboard()
         self.setup_app_manager()
         self.setup_connections()
@@ -71,33 +73,37 @@ class NetMonitorUltimate(ctk.CTk):
         self.tab_dash.grid_rowconfigure(1, weight=1)
         
         # Labels
-        self.dl_label = ctk.CTkLabel(self.tab_dash, text="⬇ 0 KB/s", font=self.MAIN_FONT, text_color="#00ff00")
+        self.dl_label = ctk.CTkLabel(self.tab_dash, text="⬇ 0 KB/s", font=self.FONT_HEADER, text_color="#00ff00")
         self.dl_label.grid(row=0, column=0, pady=10)
         
-        self.ul_label = ctk.CTkLabel(self.tab_dash, text="⬆ 0 KB/s", font=self.MAIN_FONT, text_color="#ff9900")
+        self.ul_label = ctk.CTkLabel(self.tab_dash, text="⬆ 0 KB/s", font=self.FONT_HEADER, text_color="#ff9900")
         self.ul_label.grid(row=0, column=1, pady=10)
 
         # Graph
         self.fig = Figure(figsize=(5, 3), dpi=100, facecolor='#2b2b2b')
         self.ax = self.fig.add_subplot(111)
         self.ax.set_facecolor('#2b2b2b')
-        self.ax.tick_params(colors='white', labelcolor='white')
+        self.ax.tick_params(colors='white', labelcolor='white', labelsize=8)
         self.ax.spines['bottom'].set_color('white')
         self.ax.spines['left'].set_color('white')
+        self.ax.spines['top'].set_visible(False)
+        self.ax.spines['right'].set_visible(False)
         
-        self.line_dl, = self.ax.plot([], [], color='#00ff00', label='Download')
-        self.line_ul, = self.ax.plot([], [], color='#ff9900', label='Upload')
-        self.ax.legend(facecolor='#2b2b2b', labelcolor='white')
+        self.line_dl, = self.ax.plot([], [], color='#00ff00', linewidth=2, label='Download')
+        self.line_ul, = self.ax.plot([], [], color='#ff9900', linewidth=2, label='Upload')
+        self.ax.legend(facecolor='#2b2b2b', labelcolor='white', prop={'family': 'Consolas', 'size': 10})
+        self.ax.grid(True, color='#444444', linestyle='--', linewidth=0.5)
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.tab_dash)
         self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
 
         # Kill Switch
-        self.kill_btn = ctk.CTkButton(self.tab_dash, text="💀 PANIC (KILL INTERNET)", fg_color="red", hover_color="darkred", command=self.kill_switch, font=self.MAIN_FONT)
+        self.kill_btn = ctk.CTkButton(self.tab_dash, text="💀 PANIC (KILL INTERNET)", font=self.FONT_BUTTON, 
+                                      fg_color="red", hover_color="darkred", height=50, command=self.kill_switch)
         self.kill_btn.grid(row=2, column=0, columnspan=2, pady=20)
 
     # ==========================
-    # TAB 2: APP MANAGER (Blocker)
+    # TAB 2: APP MANAGER
     # ==========================
     def setup_app_manager(self):
         self.tab_apps.grid_columnconfigure((0, 1), weight=1)
@@ -107,14 +113,15 @@ class NetMonitorUltimate(ctk.CTk):
         self.control_frame = ctk.CTkFrame(self.tab_apps)
         self.control_frame.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
         
-        self.refresh_btn = ctk.CTkButton(self.control_frame, text="🔄 Refresh Lists", command=self.refresh_all_apps, font=self.MAIN_FONT)
+        self.refresh_btn = ctk.CTkButton(self.control_frame, text="🔄 Refresh Lists", font=self.FONT_BUTTON, command=self.refresh_all_apps)
         self.refresh_btn.pack(side="left", padx=10, pady=10)
         
-        ctk.CTkLabel(self.control_frame, text="⚠️ Admin Rights Required for Blocking", text_color="orange").pack(side="right", padx=10),
+        ctk.CTkLabel(self.control_frame, text="⚠️ Admin Required", font=self.FONT_BODY, text_color="orange").pack(side="right", padx=10)
 
         # Lists
         self.active_frame = ctk.CTkScrollableFrame(self.tab_apps, label_text="🟢 Active Apps")
         self.active_frame.grid(row=1, column=0, padx=(10, 5), pady=10, sticky="nsew")
+        # Fix internal label fonts if possible, or just accept default for header
 
         self.blocked_frame = ctk.CTkScrollableFrame(self.tab_apps, label_text="🔴 Blocked Apps")
         self.blocked_frame.grid(row=1, column=1, padx=(5, 10), pady=10, sticky="nsew")
@@ -135,9 +142,9 @@ class NetMonitorUltimate(ctk.CTk):
         for name, path in active_apps.items():
             f = ctk.CTkFrame(self.active_frame)
             f.pack(fill="x", pady=2)
-            ctk.CTkLabel(f, text=name, font=("Segoe UI", 12)).pack(side="left", padx=5)
-            # Use partial function to safely pass arguments
-            ctk.CTkButton(f, text="🛡️ BLOCK", width=60, fg_color="#ff9900", command=lambda n=name, p=path: self.block_app(n, p)).pack(side="right", padx=5)
+            ctk.CTkLabel(f, text=name, font=self.FONT_BODY).pack(side="left", padx=5)
+            ctk.CTkButton(f, text="BLOCK", width=60, font=self.FONT_BUTTON, fg_color="#ff9900", 
+                          command=lambda n=name, p=path: self.block_app(n, p)).pack(side="right", padx=5)
 
         # 2. Blocked Rules
         for w in self.blocked_frame.winfo_children(): w.destroy()
@@ -153,10 +160,10 @@ class NetMonitorUltimate(ctk.CTk):
                     
                     f = ctk.CTkFrame(self.blocked_frame)
                     f.pack(fill="x", pady=2)
-                    ctk.CTkLabel(f, text=app_name, text_color="red").pack(side="left", padx=5)
-                    ctk.CTkButton(f, text="🔓 UNBLOCK", width=70, fg_color="green", command=lambda r=rule_name: self.unblock_app(r)).pack(side="right", padx=5)
-        except:
-            pass
+                    ctk.CTkLabel(f, text=app_name, font=self.FONT_BODY, text_color="red").pack(side="left", padx=5)
+                    ctk.CTkButton(f, text="UNBLOCK", width=70, font=self.FONT_BUTTON, fg_color="green", 
+                                  command=lambda r=rule_name: self.unblock_app(r)).pack(side="right", padx=5)
+        except: pass
 
     def block_app(self, name, path):
         rule = f"Block_{name}_PythonTool"
@@ -181,19 +188,22 @@ class NetMonitorUltimate(ctk.CTk):
     def setup_connections(self):
         self.tab_conn.grid_columnconfigure(0, weight=1)
         self.tab_conn.grid_rowconfigure(1, weight=1)
-        ctk.CTkButton(self.tab_conn, text="🔄 Refresh", command=self.get_conns).grid(row=0, column=0, pady=10)
-        self.conn_text = ctk.CTkTextbox(self.tab_conn, font=("Segoe UI", 12))
-        self.conn_text.grid(row=1, column=0, sticky="nsew")
+        
+        ctk.CTkButton(self.tab_conn, text="🔄 Refresh Table", font=self.FONT_BUTTON, command=self.get_conns).grid(row=0, column=0, pady=10)
+        
+        self.conn_text = ctk.CTkTextbox(self.tab_conn, font=self.FONT_BODY)
+        self.conn_text.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
 
     def get_conns(self):
-        # FIX: Changed "0.0" to "1.0"
         self.conn_text.delete("1.0", "end")
-        self.conn_text.insert("1.0", f"{'L.PORT':<10} {'REMOTE IP':<25} {'STATUS':<15} {'PID'}\n" + "-"*60 + "\n")
+        header = f"{'L.PORT':<10} {'REMOTE IP':<25} {'STATUS':<15} {'PID'}\n" + "-"*65 + "\n"
+        self.conn_text.insert("1.0", header)
         try:
             for c in psutil.net_connections(kind='inet'):
                 if c.status == 'ESTABLISHED':
                     r = f"{c.raddr.ip}:{c.raddr.port}" if c.raddr else "N/A"
-                    self.conn_text.insert("end", f"{c.laddr.port:<10} {r:<25} {c.status:<15} {c.pid}\n")
+                    line = f"{c.laddr.port:<10} {r:<25} {c.status:<15} {c.pid}\n"
+                    self.conn_text.insert("end", line)
         except: self.conn_text.insert("end", "Error reading connections.")
 
     # ==========================
@@ -201,16 +211,20 @@ class NetMonitorUltimate(ctk.CTk):
     # ==========================
     def setup_scanner(self):
         self.tab_scan.grid_columnconfigure(0, weight=1)
-        ctk.CTkButton(self.tab_scan, text="📡 Scan Network", command=self.run_scan).grid(row=0, column=0, pady=10)
-        self.scan_text = ctk.CTkTextbox(self.tab_scan, font=("Segoe UI", 12))
-        self.scan_text.grid(row=1, column=0, sticky="nsew")
+        self.tab_scan.grid_rowconfigure(1, weight=1)
+
+        ctk.CTkButton(self.tab_scan, text="📡 Scan Local Network", font=self.FONT_BUTTON, command=self.run_scan).grid(row=0, column=0, pady=10)
+        
+        self.scan_text = ctk.CTkTextbox(self.tab_scan, font=self.FONT_BODY)
+        self.scan_text.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
 
     def run_scan(self):
-        # FIX: Changed "0.0" to "1.0"
         self.scan_text.delete("1.0", "end")
+        self.scan_text.insert("1.0", "Scanning ARP table...\n\n")
         try:
-            self.scan_text.insert("1.0", os.popen('arp -a').read())
-        except: self.scan_text.insert("1.0", "Scan failed.")
+            output = os.popen('arp -a').read()
+            self.scan_text.insert("end", output)
+        except: self.scan_text.insert("end", "Scan failed.")
 
     # ==========================
     # CORE LOOP
@@ -231,7 +245,10 @@ class NetMonitorUltimate(ctk.CTk):
             self.y_ul.append(us)
             self.line_dl.set_data(self.x_data, self.y_dl)
             self.line_ul.set_data(self.x_data, self.y_ul)
-            self.ax.set_ylim(0, max(max(self.y_dl), max(self.y_ul), 10) * 1.2)
+            
+            # Auto-scale Y axis
+            peak = max(max(self.y_dl), max(self.y_ul), 10)
+            self.ax.set_ylim(0, peak * 1.2)
             self.canvas.draw()
             
             self.last_upload, self.last_download, self.last_time = u, d, t
@@ -241,6 +258,7 @@ class NetMonitorUltimate(ctk.CTk):
     def kill_switch(self):
         os.system("ipconfig /release")
         self.dl_label.configure(text="KILLED", text_color="red")
+        self.ul_label.configure(text="OFFLINE", text_color="red")
 
 if __name__ == "__main__":
     app = NetMonitorUltimate()
