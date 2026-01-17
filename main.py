@@ -19,16 +19,16 @@ except ImportError:
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("green")
 
-class Ned(ctk.CTk):
+class ned(ctk.CTk):
     def __init__(self):
         super().__init__()
 
         # --- FONT CONFIG ---
-        self.FONT_HEADER = ("Lucida Console", 26, "bold")
-        self.FONT_SUBHEAD = ("Lucida Console", 16, "bold")
-        self.FONT_BODY = ("Lucida Console", 12)
-        self.FONT_MONO = ("Lucida Console", 12)
-        self.FONT_BUTTON = ("Lucida Console", 13, "bold")
+        self.FONT_HEADER = ("Segoe UI", 26, "bold")
+        self.FONT_SUBHEAD = ("Segoe UI", 16, "bold")
+        self.FONT_BODY = ("Segoe UI", 12)
+        self.FONT_MONO = ("Segoe UI", 12)
+        self.FONT_BUTTON = ("Segoe UI", 13, "bold")
 
         # Window Setup
         self.title("Ned 👓")
@@ -104,7 +104,7 @@ class Ned(ctk.CTk):
         
         self.line_dl, = self.ax.plot([], [], color='#00ff00', linewidth=2, label='Download')
         self.line_ul, = self.ax.plot([], [], color='#ff9900', linewidth=2, label='Upload')
-        self.ax.legend(facecolor='#2b2b2b', labelcolor='white', prop={'family': 'Consolas', 'size': 10})
+        self.ax.legend(facecolor='#2b2b2b', labelcolor='white', prop={'family': 'Segoe UI', 'size': 10})
         self.ax.grid(True, color='#444444', linestyle='--', linewidth=0.5)
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.tab_dash)
@@ -151,7 +151,7 @@ class Ned(ctk.CTk):
         except: pass
         
         if not active_apps:
-             ctk.CTkLabel(self.active_frame, text="No active connections found.", font=self.FONT_BODY, text_color="gray").pack(pady=20)
+            ctk.CTkLabel(self.active_frame, text="No active connections found.", font=self.FONT_BODY, text_color="gray").pack(pady=20)
 
         for name, path in active_apps.items():
             f = ctk.CTkFrame(self.active_frame, fg_color="#2b2b2b", corner_radius=6)
@@ -182,7 +182,7 @@ class Ned(ctk.CTk):
                     ctk.CTkButton(f, text="UNBLOCK", width=70, font=("Segoe UI", 11, "bold"), fg_color="#2eb82e", hover_color="#238f23",
                                   command=lambda r=rule_name: self.unblock_app(r)).pack(side="right", padx=10)
             if not found:
-                 ctk.CTkLabel(self.blocked_frame, text="No apps blocked.", font=self.FONT_BODY, text_color="gray").pack(pady=20)
+                ctk.CTkLabel(self.blocked_frame, text="No apps blocked.", font=self.FONT_BODY, text_color="gray").pack(pady=20)
         except: pass
 
     def block_app(self, name, path):
@@ -265,7 +265,7 @@ class Ned(ctk.CTk):
                     self.create_selectable_label(card, str(c.pid), 80, "gray")
 
             if count == 0:
-                 ctk.CTkLabel(self.conn_scroll, text="No established connections.", font=self.FONT_BODY).pack(pady=20)
+                ctk.CTkLabel(self.conn_scroll, text="No established connections.", font=self.FONT_BODY).pack(pady=20)
 
         except Exception as e: 
             print(e)
@@ -348,7 +348,7 @@ class Ned(ctk.CTk):
                 ctk.CTkLabel(self.scan_scroll, text="No devices found or ARP table empty.", font=self.FONT_BODY).pack(pady=20)
 
         except Exception as e: 
-             ctk.CTkLabel(self.scan_scroll, text="Scan failed.", text_color="red").pack(pady=20)
+            ctk.CTkLabel(self.scan_scroll, text="Scan failed.", text_color="red").pack(pady=20)
 
     # ==========================
     # CORE LOOP
@@ -395,6 +395,11 @@ class Ned(ctk.CTk):
             
         self.after(1000, self.monitor_loop)
 
+    def kill_switch(self):
+        os.system("ipconfig /release")
+        self.dl_label.configure(text="KILLED", text_color="red")
+        self.ul_label.configure(text="OFFLINE", text_color="red")
+
 if __name__ == "__main__":
-    app = Ned()
+    app = ned()
     app.mainloop()
