@@ -31,9 +31,14 @@ class ned(ctk.CTk):
         self.FONT_BUTTON = ("Segoe UI", 13, "bold")
 
         # Window Setup
-        self.title("Ned 👓")
+        self.title("Ned")
         self.geometry("1100x750")
         
+        # Set icon with absolute path
+    
+        from pathlib import Path
+        ned_icon = Path(__file__).parent / "gls.ico"
+        self.iconbitmap(str(ned_icon))
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
