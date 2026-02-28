@@ -30,6 +30,18 @@ except ImportError:
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("green")
 
+# Material You Colors (Light, Dark)
+MY_BG = ("#FDFBFF", "#1A1C1E")
+MY_SURFACE = ("#F2F4F9", "#202529")
+MY_SURFACE_HIGH = ("#E1E2E8", "#2A3136")
+MY_PRIMARY = ("#0061A4", "#A1C9FF")
+MY_ON_PRIMARY = ("#FFFFFF", "#00325A")
+MY_SECONDARY = ("#535F70", "#BCC7DB")
+MY_ERROR = ("#BA1A1A", "#FFB4AB")
+MY_SUCCESS = ("#106D34", "#81C784")
+MY_TEXT = ("#1A1C1E", "#E2E2E6")
+MY_TEXT_MUTED = ("#73777F", "#8C9199")
+
 APP_VERSION = "1.3.0"
 
 class ned(ctk.CTk):
@@ -37,15 +49,16 @@ class ned(ctk.CTk):
         super().__init__()
 
         # --- FONT CONFIG ---
-        self.FONT_HEADER = ("Segoe UI", 26, "bold")
+        self.FONT_HEADER = ("Segoe UI", 28, "bold")
         self.FONT_SUBHEAD = ("Segoe UI", 16, "bold")
-        self.FONT_BODY = ("Segoe UI", 12)
-        self.FONT_MONO = ("Segoe UI", 12)
-        self.FONT_BUTTON = ("Segoe UI", 13, "bold")
+        self.FONT_BODY = ("Segoe UI", 13)
+        self.FONT_MONO = ("Consolas", 12)
+        self.FONT_BUTTON = ("Segoe UI", 14, "bold")
 
         # Window Setup
         self.title("Ned | Ultimate Network Monitor")
         self.geometry("1200x800")
+        self.configure(fg_color=MY_BG)
         
         # Set icon
         try:
@@ -113,9 +126,16 @@ class ned(ctk.CTk):
         self._selected_interface = None  # None = all interfaces
 
         # --- TABS ---
-        self.tabview = ctk.CTkTabview(self, command=self.on_tab_change)
+        self.tabview = ctk.CTkTabview(self, command=self.on_tab_change,
+                                      fg_color=MY_BG,
+                                      segmented_button_fg_color=MY_SURFACE_HIGH,
+                                      segmented_button_selected_color=MY_ON_PRIMARY,
+                                      segmented_button_selected_hover_color="#004A87",
+                                      segmented_button_unselected_color=MY_SURFACE_HIGH,
+                                      segmented_button_unselected_hover_color="#3A4249",
+                                      text_color=MY_PRIMARY)
         self.tabview.grid(row=0, column=0, padx=20, pady=(20, 5), sticky="nsew")
-        self.tabview._segmented_button.configure(font=self.FONT_BUTTON) 
+        self.tabview._segmented_button.configure(font=self.FONT_BUTTON, corner_radius=20)
         
         self.tab_dash = self.tabview.add("Dashboard")
         self.tab_bw = self.tabview.add("Bandwidth")
@@ -129,9 +149,10 @@ class ned(ctk.CTk):
         self.tab_settings = self.tabview.add("Settings")
 
         # --- STATUS BAR ---
-        self.status_bar = ctk.CTkLabel(self, text="Ready.", font=("Segoe UI", 11), 
-                                        text_color="#888888", anchor="w")
-        self.status_bar.grid(row=1, column=0, padx=25, pady=(0, 10), sticky="ew")
+        self.status_bar = ctk.CTkLabel(self, text="Ready.", font=("Segoe UI", 12), 
+                                        text_color=MY_TEXT_MUTED, anchor="w",
+                                        fg_color=MY_SURFACE, corner_radius=8, padx=15, pady=5)
+        self.status_bar.grid(row=1, column=0, padx=25, pady=(0, 15), sticky="ew")
         
         # Setup Views
         self.setup_dashboard()
@@ -281,16 +302,20 @@ class ned(ctk.CTk):
         top = ctk.CTkFrame(self.tab_history, fg_color="transparent")
         top.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
 
-        ctk.CTkButton(top, text="💾 Save Current Session", font=self.FONT_BUTTON,
+        ctk.CTkButton(top, text="💾 Save Current Session", font=self.FONT_BUTTON, fg_color=MY_PRIMARY, text_color=MY_ON_PRIMARY, hover_color="#8AB4F8", corner_radius=20,
                        command=self._save_session_to_db).pack(side="left", padx=5)
-        ctk.CTkButton(top, text="🔄 Refresh Chart", font=self.FONT_BUTTON, fg_color="#444444",
+        ctk.CTkButton(top, text="🔄 Refresh Chart", font=self.FONT_BUTTON, fg_color=MY_SURFACE_HIGH, text_color=MY_TEXT, hover_color="#3A4249", corner_radius=20,
                        command=self._render_history).pack(side="left", padx=5)
 
+        # Graph Card
+        graph_card = ctk.CTkFrame(self.tab_history, fg_color=MY_SURFACE, corner_radius=16)
+        graph_card.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+
         # Matplotlib chart
-        self.hist_fig = Figure(figsize=(5, 3), dpi=100, facecolor='#2b2b2b')
+        self.hist_fig = Figure(figsize=(5, 3), dpi=100, facecolor=MY_SURFACE[1])
         self.hist_ax = self.hist_fig.add_subplot(111)
-        self.hist_canvas = FigureCanvasTkAgg(self.hist_fig, master=self.tab_history)
-        self.hist_canvas.get_tk_widget().grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+        self.hist_canvas = FigureCanvasTkAgg(self.hist_fig, master=graph_card)
+        self.hist_canvas.get_tk_widget().pack(fill="both", expand=True, padx=15, pady=15)
 
     def _save_session_to_db(self):
         """Save current session data to the database."""
@@ -349,14 +374,14 @@ class ned(ctk.CTk):
     def _render_history(self):
         """Render the 7-day usage bar chart."""
         self.hist_ax.clear()
-        self.hist_ax.set_facecolor('#2b2b2b')
-        self.hist_ax.tick_params(colors='white', labelcolor='white', labelsize=8)
-        self.hist_ax.spines['bottom'].set_color('white')
-        self.hist_ax.spines['left'].set_color('white')
+        self.hist_ax.set_facecolor(MY_SURFACE[1])
+        self.hist_ax.tick_params(colors=MY_TEXT_MUTED[1], labelcolor=MY_TEXT_MUTED[1], labelsize=9)
+        self.hist_ax.spines['bottom'].set_color(MY_TEXT_MUTED[1])
+        self.hist_ax.spines['left'].set_color(MY_TEXT_MUTED[1])
         self.hist_ax.spines['top'].set_visible(False)
         self.hist_ax.spines['right'].set_visible(False)
-        self.hist_ax.set_ylabel("MB", color='white', fontsize=10)
-        self.hist_ax.set_title("Daily Data Usage (Last 7 Days)", color='white', fontsize=12)
+        self.hist_ax.set_ylabel("MB", color=MY_TEXT_MUTED[1], fontsize=10)
+        self.hist_ax.set_title("Daily Data Usage (Last 7 Days)", color=MY_TEXT[1], fontsize=12)
 
         try:
             conn = sqlite3.connect(str(self._db_path))
@@ -384,11 +409,21 @@ class ned(ctk.CTk):
         x = np.arange(len(dates))
         width = 0.35
 
-        self.hist_ax.bar(x - width/2, dl_mb, width, label='Download', color='#00ff00', alpha=0.8)
-        self.hist_ax.bar(x + width/2, ul_mb, width, label='Upload', color='#ff9900', alpha=0.8)
+        bars_dl = self.hist_ax.bar(x - width/2, dl_mb, width, label='Download', color=MY_SUCCESS[1], alpha=0.8)
+        bars_ul = self.hist_ax.bar(x + width/2, ul_mb, width, label='Upload', color=MY_ERROR[1], alpha=0.8)
+        
+        # Add data labels on top of bars
+        self.hist_ax.bar_label(bars_dl, fmt='%.1f', padding=3, color=MY_TEXT[1], fontsize=9, fontweight='bold')
+        self.hist_ax.bar_label(bars_ul, fmt='%.1f', padding=3, color=MY_TEXT[1], fontsize=9, fontweight='bold')
+        
+        # Expand Y limit slightly to make room for labels
+        max_val = max(max(dl_mb, default=0), max(ul_mb, default=0))
+        if max_val > 0:
+            self.hist_ax.set_ylim(0, max_val * 1.2)
+
         self.hist_ax.set_xticks(x)
-        self.hist_ax.set_xticklabels(dates, color='white')
-        self.hist_ax.legend(facecolor='#2b2b2b', labelcolor='white', prop={'size': 9})
+        self.hist_ax.set_xticklabels(dates, color=MY_TEXT[1])
+        self.hist_ax.legend(facecolor=MY_SURFACE[1], labelcolor=MY_TEXT[1], prop={'size': 10}, edgecolor=MY_SURFACE[1])
 
         self.hist_fig.tight_layout()
         self.hist_canvas.draw()
@@ -403,17 +438,14 @@ class ned(ctk.CTk):
         self.tab_dns.grid_rowconfigure(1, weight=1)
 
         top = ctk.CTkFrame(self.tab_dns, fg_color="transparent")
-        top.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
+        top.grid(row=0, column=0, pady=10)
 
-        ctk.CTkButton(top, text="🔄 Refresh DNS Cache", font=self.FONT_BUTTON,
-                       command=self._refresh_dns).pack(side="left", padx=5)
-        ctk.CTkButton(top, text="🧹 Flush DNS", font=self.FONT_BUTTON, fg_color="#cf0000",
-                       hover_color="#8a0000", command=self._flush_dns).pack(side="left", padx=5)
-        ctk.CTkButton(top, text="💾 Export CSV", font=self.FONT_BUTTON, fg_color="#444444",
-                       command=lambda: self.export_data("dns")).pack(side="left", padx=5)
-        
-        self.dns_count_label = ctk.CTkLabel(top, text="0 entries", font=self.FONT_BODY, text_color="gray")
-        self.dns_count_label.pack(side="right", padx=10)
+        ctk.CTkButton(top, text="🔄 Refresh DNS Cache", font=self.FONT_BUTTON, fg_color=MY_PRIMARY, text_color=MY_ON_PRIMARY, hover_color="#8AB4F8", corner_radius=20, command=self._refresh_dns).pack(side="left", padx=10)
+        ctk.CTkButton(top, text="🧹 Flush DNS", font=self.FONT_BUTTON, fg_color=MY_ERROR, text_color="#3B0000", hover_color="#D99B94", corner_radius=20, command=self._flush_dns).pack(side="left", padx=10)
+        ctk.CTkButton(top, text="💾 Export CSV", font=self.FONT_BUTTON, fg_color=MY_SURFACE_HIGH, text_color=MY_TEXT, hover_color="#3A4249", corner_radius=20, command=lambda: self.export_data("dns")).pack(side="left", padx=10)
+
+        self.dns_count_label = ctk.CTkLabel(top, text="", font=self.FONT_BODY, text_color=MY_TEXT_MUTED)
+        self.dns_count_label.pack(side="left", padx=20)
 
         self.dns_scroll = ctk.CTkScrollableFrame(self.tab_dns, fg_color="transparent")
         self.dns_scroll.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
@@ -460,18 +492,18 @@ class ned(ctk.CTk):
 
         if not entries:
             ctk.CTkLabel(self.dns_scroll, text="DNS cache is empty.", font=self.FONT_BODY,
-                         text_color="gray").pack(pady=20)
+                         text_color=MY_TEXT_MUTED).pack(pady=20)
             return
 
         for name, rtype, data in entries:
-            card = ctk.CTkFrame(self.dns_scroll, fg_color="#2b2b2b", corner_radius=4)
-            card.pack(fill="x", pady=1, padx=2)
+            card = ctk.CTkFrame(self.dns_scroll, fg_color=MY_SURFACE, corner_radius=12)
+            card.pack(fill="x", pady=4, padx=4)
             ctk.CTkLabel(card, text=name, width=300, font=self.FONT_MONO, 
-                         text_color="white", anchor="w").pack(side="left", padx=8, pady=4)
+                         text_color=MY_PRIMARY, anchor="w").pack(side="left", padx=8, pady=8)
             ctk.CTkLabel(card, text=rtype, width=60, font=self.FONT_MONO,
-                         text_color="#00ccff", anchor="w").pack(side="left", padx=4)
+                         text_color=MY_TEXT_MUTED, anchor="w").pack(side="left", padx=4)
             ctk.CTkLabel(card, text=data, width=200, font=self.FONT_MONO,
-                         text_color="#88ff88", anchor="w").pack(side="left", padx=4)
+                         text_color=MY_TEXT, anchor="w").pack(side="left", padx=4)
         self.set_status(f"🔍 Found {len(entries)} DNS cache entries.")
 
     def _flush_dns(self):
@@ -497,35 +529,39 @@ class ned(ctk.CTk):
         top.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
 
         ctk.CTkLabel(top, text="Target:", font=self.FONT_BODY).pack(side="left", padx=(10, 5))
-        self.ping_entry = ctk.CTkEntry(top, width=150, placeholder_text="8.8.8.8")
+        self.ping_entry = ctk.CTkEntry(top, width=150, placeholder_text="8.8.8.8", fg_color=MY_SURFACE, border_color=MY_SURFACE_HIGH, corner_radius=16)
         self.ping_entry.insert(0, "8.8.8.8")
         self.ping_entry.pack(side="left", padx=5)
 
-        self.ping_btn = ctk.CTkButton(top, text="▶ Start Ping", font=self.FONT_BUTTON,
+        self.ping_btn = ctk.CTkButton(top, text="▶ Start Ping", font=self.FONT_BUTTON, fg_color=MY_PRIMARY, text_color=MY_ON_PRIMARY, hover_color="#8AB4F8", corner_radius=20,
                                        command=self._toggle_ping_btn)
         self.ping_btn.pack(side="left", padx=10)
 
-        self.ping_stat_label = ctk.CTkLabel(top, text="--", font=("Segoe UI", 14, "bold"), text_color="#00ccff")
+        self.ping_stat_label = ctk.CTkLabel(top, text="--", font=("Segoe UI", 16, "bold"), text_color=MY_PRIMARY)
         self.ping_stat_label.pack(side="right", padx=15)
 
+        # Graph Card
+        graph_card = ctk.CTkFrame(self.tab_ping, fg_color=MY_SURFACE, corner_radius=16)
+        graph_card.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+
         # Matplotlib ping chart
-        self.ping_fig = Figure(figsize=(5, 3), dpi=100, facecolor='#2b2b2b')
+        self.ping_fig = Figure(figsize=(5, 3), dpi=100, facecolor=MY_SURFACE[1])
         self.ping_ax = self.ping_fig.add_subplot(111)
-        self.ping_ax.set_facecolor('#2b2b2b')
-        self.ping_ax.tick_params(colors='white', labelcolor='white', labelsize=8)
-        self.ping_ax.spines['bottom'].set_color('white')
-        self.ping_ax.spines['left'].set_color('white')
+        self.ping_ax.set_facecolor(MY_SURFACE[1])
+        self.ping_ax.tick_params(colors=MY_TEXT_MUTED[1], labelcolor=MY_TEXT_MUTED[1], labelsize=9)
+        self.ping_ax.spines['bottom'].set_color(MY_TEXT_MUTED[1])
+        self.ping_ax.spines['left'].set_color(MY_TEXT_MUTED[1])
         self.ping_ax.spines['top'].set_visible(False)
         self.ping_ax.spines['right'].set_visible(False)
-        self.ping_ax.set_xlabel("Samples", color='white', fontsize=9)
-        self.ping_ax.set_ylabel("ms", color='white', fontsize=9)
-        self.ping_ax.set_title("Latency (ms)", color='white', fontsize=11)
+        self.ping_ax.set_xlabel("Samples", color=MY_TEXT_MUTED[1], fontsize=10)
+        self.ping_ax.set_ylabel("ms", color=MY_TEXT_MUTED[1], fontsize=10)
+        self.ping_ax.set_title("Latency (ms)", color=MY_TEXT[1], fontsize=12)
 
-        self.ping_line, = self.ping_ax.plot([], [], color='#00ccff', linewidth=2)
-        self.ping_ax.grid(True, color='#444444', linestyle='--', linewidth=0.5)
+        self.ping_line, = self.ping_ax.plot([], [], color=MY_PRIMARY[1], linewidth=2.5)
+        self.ping_ax.grid(True, color=MY_SURFACE_HIGH[1], linestyle='--', linewidth=1)
 
-        self.ping_canvas = FigureCanvasTkAgg(self.ping_fig, master=self.tab_ping)
-        self.ping_canvas.get_tk_widget().grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+        self.ping_canvas = FigureCanvasTkAgg(self.ping_fig, master=graph_card)
+        self.ping_canvas.get_tk_widget().pack(fill="both", expand=True, padx=15, pady=15)
 
     def _toggle_ping_btn(self):
         if self._ping_active:
@@ -538,14 +574,14 @@ class ned(ctk.CTk):
             return
         self._ping_target = self.ping_entry.get().strip() or "8.8.8.8"
         self._ping_active = True
-        self.ping_btn.configure(text="\u23f9 Stop Ping", fg_color="#cf0000")
+        self.ping_btn.configure(text="\u23f9 Stop Ping", fg_color=MY_ERROR, text_color="#3B0000", hover_color="#D99B94")
         self.set_status(f"🏓 Pinging {self._ping_target}...")
         self._ping_loop()
 
     def _stop_ping(self):
         self._ping_active = False
         if hasattr(self, 'ping_btn'):
-            self.ping_btn.configure(text="\u25b6 Start Ping", fg_color=["#2CC985", "#2FA572"])
+            self.ping_btn.configure(text="\u25b6 Start Ping", fg_color=MY_PRIMARY, text_color=MY_ON_PRIMARY, hover_color="#8AB4F8")
 
     def _ping_loop(self):
         if not self._ping_active:
@@ -580,10 +616,10 @@ class ned(ctk.CTk):
 
     def _update_ping_ui(self, latency):
         if latency >= 0:
-            color = "#00ff00" if latency < 50 else "#ff9900" if latency < 100 else "#ff0000"
+            color = MY_SUCCESS if latency < 50 else MY_SECONDARY if latency < 150 else MY_ERROR
             self.ping_stat_label.configure(text=f"{latency:.0f} ms", text_color=color)
         else:
-            self.ping_stat_label.configure(text="Timeout", text_color="red")
+            self.ping_stat_label.configure(text="Timeout", text_color=MY_ERROR)
 
         self.ping_line.set_data(self._ping_x, list(self._ping_data))
         peak = max(max(self._ping_data), 10)
@@ -604,16 +640,16 @@ class ned(ctk.CTk):
         top = ctk.CTkFrame(self.tab_bw, fg_color="transparent")
         top.grid(row=0, column=0, sticky="ew", padx=10, pady=5)
         
-        ctk.CTkButton(top, text="🔄 Refresh", font=self.FONT_BUTTON, 
+        ctk.CTkButton(top, text="🔄 Refresh", font=self.FONT_BUTTON, fg_color=MY_PRIMARY, text_color=MY_ON_PRIMARY, hover_color="#8AB4F8", corner_radius=20,
                        command=self._bw_refresh_now).pack(side="left", padx=5)
-        ctk.CTkButton(top, text="💾 Export CSV", font=self.FONT_BUTTON, fg_color="#444444",
+        ctk.CTkButton(top, text="💾 Export CSV", font=self.FONT_BUTTON, fg_color=MY_SURFACE_HIGH, text_color=MY_TEXT, hover_color="#3A4249", corner_radius=20,
                        command=lambda: self.export_data("bandwidth")).pack(side="left", padx=5)
         
-        self.bw_status_label = ctk.CTkLabel(top, text="⏸ Not tracking", font=self.FONT_BODY, text_color="gray")
+        self.bw_status_label = ctk.CTkLabel(top, text="⏸ Not tracking", font=self.FONT_BODY, text_color=MY_TEXT_MUTED)
         self.bw_status_label.pack(side="right", padx=10)
 
         # Headers (sortable)
-        h_frame = ctk.CTkFrame(self.tab_bw, height=30, fg_color="#1a1a1a")
+        h_frame = ctk.CTkFrame(self.tab_bw, height=30, fg_color=MY_SURFACE, corner_radius=8)
         h_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(5, 0))
 
         bw_headers = [
@@ -623,7 +659,7 @@ class ned(ctk.CTk):
         ]
         for text, width, col_idx in bw_headers:
             btn = ctk.CTkButton(h_frame, text=f"{text} ↕", width=width, height=25,
-                                font=("Segoe UI", 11, "bold"), fg_color="#1a1a1a", hover_color="#333333",
+                                font=("Segoe UI", 11, "bold"), fg_color="transparent", text_color=MY_SECONDARY, hover_color=MY_SURFACE_HIGH,
                                 anchor="w", command=lambda c=col_idx: self._sort_bw(c))
             btn.pack(side="left", padx=4)
 
@@ -636,7 +672,7 @@ class ned(ctk.CTk):
         if self._app_bw_tracking:
             return
         self._app_bw_tracking = True
-        self.bw_status_label.configure(text="▶ Live tracking", text_color="#00ff00")
+        self.bw_status_label.configure(text="▶ Live tracking", text_color=MY_SUCCESS)
         self.set_status("📊 Per-app bandwidth tracking started.")
         self._bw_track_loop()
 
@@ -644,7 +680,7 @@ class ned(ctk.CTk):
         """Stop the per-app bandwidth tracking loop."""
         self._app_bw_tracking = False
         if hasattr(self, 'bw_status_label'):
-            self.bw_status_label.configure(text="⏸ Paused (switch to tab to resume)", text_color="gray")
+            self.bw_status_label.configure(text="⏸ Paused (switch to tab to resume)", text_color=MY_TEXT_MUTED)
 
     def _bw_refresh_now(self):
         """Manual refresh of bandwidth data."""
@@ -720,14 +756,24 @@ class ned(ctk.CTk):
         self._app_bw_data = new_data
 
     def _render_bw(self):
-        """Render the per-app bandwidth list."""
-        for w in self.bw_scroll.winfo_children():
-            w.destroy()
+        """Render the per-app bandwidth list without flickering."""
+        if not hasattr(self, '_bw_widgets'):
+            self._bw_widgets = {}
+            self._bw_empty_label = None
 
         if not self._app_bw_data:
-            ctk.CTkLabel(self.bw_scroll, text="No apps with active connections detected.",
-                         font=self.FONT_BODY, text_color="gray").pack(pady=20)
+            if not self._bw_empty_label:
+                # Clear everything
+                for w in self.bw_scroll.winfo_children(): w.destroy()
+                self._bw_widgets.clear()
+                self._bw_empty_label = ctk.CTkLabel(self.bw_scroll, text="No apps with active connections detected.",
+                                                    font=self.FONT_BODY, text_color="gray")
+                self._bw_empty_label.pack(pady=20)
             return
+
+        if self._bw_empty_label:
+            self._bw_empty_label.destroy()
+            self._bw_empty_label = None
 
         # Build sortable rows: [name, pid, recv_rate, send_rate, total_recv, total_sent]
         rows = []
@@ -744,32 +790,66 @@ class ned(ctk.CTk):
         except (IndexError, TypeError):
             pass
 
+        current_pids = set(r[1] for r in rows)
+
+        # Destroy widgets for PIDs that are no longer active
+        for pid in list(self._bw_widgets.keys()):
+            if pid not in current_pids:
+                self._bw_widgets[pid]['card'].destroy()
+                del self._bw_widgets[pid]
+
         for row in rows:
             name, pid, recv_rate, send_rate, total_recv, total_sent = row
             
-            card = ctk.CTkFrame(self.bw_scroll, fg_color="#2b2b2b", corner_radius=6)
-            card.pack(fill="x", pady=2, padx=2)
+            if pid not in self._bw_widgets:
+                card = ctk.CTkFrame(self.bw_scroll, fg_color=MY_SURFACE, corner_radius=12)
+                
+                # Process name
+                name_lbl = ctk.CTkLabel(card, text=f"📦 {name}", width=180, font=self.FONT_BODY, text_color=MY_TEXT, anchor="w")
+                name_lbl.pack(side="left", padx=8, pady=8)
+                
+                # PID
+                pid_lbl = ctk.CTkLabel(card, text=str(pid), width=60, font=self.FONT_MONO, text_color=MY_TEXT_MUTED, anchor="w")
+                pid_lbl.pack(side="left", padx=4)
+                
+                # DL speed
+                dl_lbl = ctk.CTkLabel(card, text="", width=110, font=self.FONT_MONO, anchor="w")
+                dl_lbl.pack(side="left", padx=4)
+                
+                # UL speed  
+                ul_lbl = ctk.CTkLabel(card, text="", width=110, font=self.FONT_MONO, anchor="w")
+                ul_lbl.pack(side="left", padx=4)
+                
+                # Total recv
+                tr_lbl = ctk.CTkLabel(card, text="", width=110, font=self.FONT_MONO, text_color="#88ff88", anchor="w")
+                tr_lbl.pack(side="left", padx=4)
+                
+                # Total sent
+                ts_lbl = ctk.CTkLabel(card, text="", width=110, font=self.FONT_MONO, text_color="#ffcc88", anchor="w")
+                ts_lbl.pack(side="left", padx=4)
 
-            # Process name
-            ctk.CTkLabel(card, text=f"📦 {name}", width=180, font=self.FONT_BODY, 
-                         anchor="w").pack(side="left", padx=8, pady=6)
-            # PID
-            ctk.CTkLabel(card, text=str(pid), width=60, font=self.FONT_MONO,
-                         text_color="gray", anchor="w").pack(side="left", padx=4)
-            # DL speed
+                self._bw_widgets[pid] = {
+                    'card': card,
+                    'dl_lbl': dl_lbl,
+                    'ul_lbl': ul_lbl,
+                    'tr_lbl': tr_lbl,
+                    'ts_lbl': ts_lbl
+                }
+
+            # Update existing widgets
+            w = self._bw_widgets[pid]
+            
             dl_color = "#00ff00" if recv_rate > 0 else "#555555"
-            ctk.CTkLabel(card, text=self.format_speed(recv_rate), width=110, font=self.FONT_MONO,
-                         text_color=dl_color, anchor="w").pack(side="left", padx=4)
-            # UL speed  
             ul_color = "#ff9900" if send_rate > 0 else "#555555"
-            ctk.CTkLabel(card, text=self.format_speed(send_rate), width=110, font=self.FONT_MONO,
-                         text_color=ul_color, anchor="w").pack(side="left", padx=4)
-            # Total recv
-            ctk.CTkLabel(card, text=self.format_bytes(total_recv), width=110, font=self.FONT_MONO,
-                         text_color="#88ff88", anchor="w").pack(side="left", padx=4)
-            # Total sent
-            ctk.CTkLabel(card, text=self.format_bytes(total_sent), width=110, font=self.FONT_MONO,
-                         text_color="#ffcc88", anchor="w").pack(side="left", padx=4)
+
+            w['dl_lbl'].configure(text=self.format_speed(recv_rate), text_color=dl_color)
+            w['ul_lbl'].configure(text=self.format_speed(send_rate), text_color=ul_color)
+            w['tr_lbl'].configure(text=self.format_bytes(total_recv))
+            w['ts_lbl'].configure(text=self.format_bytes(total_sent))
+
+            # Repack to ensure correct sort order visually without destroying
+            w['card'].pack_forget()
+            w['card'].pack(fill="x", pady=4, padx=4)
 
     def _sort_bw(self, col_idx):
         """Sort bandwidth data by column."""
@@ -785,54 +865,62 @@ class ned(ctk.CTk):
     # ==========================
     def setup_dashboard(self):
         self.tab_dash.grid_columnconfigure((0, 1), weight=1)
-        self.tab_dash.grid_rowconfigure(2, weight=1)
+        self.tab_dash.grid_rowconfigure(0, weight=0)
+        self.tab_dash.grid_rowconfigure(1, weight=1)
         
-        # --- Speed Labels ---
-        self.dl_label = ctk.CTkLabel(self.tab_dash, text="⬇ 0 B/s", font=self.FONT_HEADER, text_color="#00ff00")
-        self.dl_label.grid(row=0, column=0, pady=(20, 5))
+        # --- Speed Cards ---
+        dl_card = ctk.CTkFrame(self.tab_dash, fg_color=MY_SURFACE, corner_radius=16)
+        dl_card.grid(row=0, column=0, padx=(10, 5), pady=10, sticky="nsew")
+        self.dl_label = ctk.CTkLabel(dl_card, text="⬇ 0 B/s", font=self.FONT_HEADER, text_color=MY_SUCCESS)
+        self.dl_label.pack(expand=True, pady=(20, 5))
+        self.total_dl_label = ctk.CTkLabel(dl_card, text="Total: 0 B", font=self.FONT_BODY, text_color=MY_TEXT_MUTED)
+        self.total_dl_label.pack(expand=True, pady=(0, 20))
         
-        self.ul_label = ctk.CTkLabel(self.tab_dash, text="⬆ 0 B/s", font=self.FONT_HEADER, text_color="#ff9900")
-        self.ul_label.grid(row=0, column=1, pady=(20, 5))
+        ul_card = ctk.CTkFrame(self.tab_dash, fg_color=MY_SURFACE, corner_radius=16)
+        ul_card.grid(row=0, column=1, padx=(5, 10), pady=10, sticky="nsew")
+        self.ul_label = ctk.CTkLabel(ul_card, text="⬆ 0 B/s", font=self.FONT_HEADER, text_color="#FFB4AB")
+        self.ul_label.pack(expand=True, pady=(20, 5))
+        self.total_ul_label = ctk.CTkLabel(ul_card, text="Total: 0 B", font=self.FONT_BODY, text_color=MY_TEXT_MUTED)
+        self.total_ul_label.pack(expand=True, pady=(0, 20))
 
-        # --- Session Totals ---
-        self.total_dl_label = ctk.CTkLabel(self.tab_dash, text="Total: 0 B", font=self.FONT_BODY, text_color="#88ff88")
-        self.total_dl_label.grid(row=1, column=0, pady=(0, 20))
-        
-        self.total_ul_label = ctk.CTkLabel(self.tab_dash, text="Total: 0 B", font=self.FONT_BODY, text_color="#ffcc88")
-        self.total_ul_label.grid(row=1, column=1, pady=(0, 20))
+        # --- Graph Card ---
+        graph_card = ctk.CTkFrame(self.tab_dash, fg_color=MY_SURFACE, corner_radius=16)
+        graph_card.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=10, pady=5)
 
-        # --- Graph ---
-        self.fig = Figure(figsize=(5, 3), dpi=100, facecolor='#2b2b2b')
+        self.fig = Figure(figsize=(5, 3), dpi=100, facecolor=MY_SURFACE[1])
         self.ax = self.fig.add_subplot(111)
-        self.ax.set_facecolor('#2b2b2b')
-        self.ax.tick_params(colors='white', labelcolor='white', labelsize=8)
-        self.ax.spines['bottom'].set_color('white')
-        self.ax.spines['left'].set_color('white')
+        self.ax.set_facecolor(MY_SURFACE[1])
+        self.ax.tick_params(colors=MY_TEXT_MUTED[1], labelcolor=MY_TEXT_MUTED[1], labelsize=9)
+        self.ax.spines['bottom'].set_color(MY_TEXT_MUTED[1])
+        self.ax.spines['left'].set_color(MY_TEXT_MUTED[1])
         self.ax.spines['top'].set_visible(False)
         self.ax.spines['right'].set_visible(False)
-        self.ax.set_xlabel("Time (s)", color='white', fontsize=9)
-        self.ax.set_ylabel("KB/s", color='white', fontsize=9)
+        self.ax.set_xlabel("Time (s)", color=MY_TEXT_MUTED[1], fontsize=10)
+        self.ax.set_ylabel("KB/s", color=MY_TEXT_MUTED[1], fontsize=10)
         
-        self.line_dl, = self.ax.plot([], [], color='#00ff00', linewidth=2, label='Download')
-        self.line_ul, = self.ax.plot([], [], color='#ff9900', linewidth=2, label='Upload')
-        self.ax.legend(facecolor='#2b2b2b', labelcolor='white', prop={'family': 'Segoe UI', 'size': 10})
-        self.ax.grid(True, color='#444444', linestyle='--', linewidth=0.5)
+        self.line_dl, = self.ax.plot([], [], color=MY_SUCCESS[1], linewidth=2.5, label='Download')
+        self.line_ul, = self.ax.plot([], [], color=MY_ERROR[1], linewidth=2.5, label='Upload')
+        self.ax.legend(facecolor=MY_SURFACE[1], labelcolor=MY_TEXT[1], prop={'family': 'Segoe UI', 'size': 10}, edgecolor=MY_SURFACE[1])
+        self.ax.grid(True, color=MY_SURFACE_HIGH[1], linestyle='--', linewidth=1)
         
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self.tab_dash)
-        self.canvas.get_tk_widget().grid(row=2, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=graph_card)
+        self.canvas.get_tk_widget().pack(fill="both", expand=True, padx=15, pady=15)
 
         # --- Buttons Frame ---
         btn_frame = ctk.CTkFrame(self.tab_dash, fg_color="transparent")
-        btn_frame.grid(row=3, column=0, columnspan=2, pady=20)
+        btn_frame.grid(row=2, column=0, columnspan=2, pady=(10, 20))
 
         # Kill Switch
         self.kill_btn = ctk.CTkButton(btn_frame, text="💀 PANIC (KILL INTERNET)", font=self.FONT_BUTTON, 
-                                      fg_color="#cf0000", hover_color="#8a0000", height=40, width=200, command=self.kill_switch)
+                                       fg_color=MY_ERROR, hover_color="#D99B94", text_color="#3B0000",
+                                       command=self.kill_switch, width=250, height=45, corner_radius=22)
         self.kill_btn.pack(side="left", padx=10)
-
-        # Restore Button
-        self.restore_btn = ctk.CTkButton(btn_frame, text="🩹 RESTORE INTERNET", font=self.FONT_BUTTON, 
-                                      fg_color="#009900", hover_color="#006600", height=40, width=200, command=self.restore_internet)
+        self._add_tooltip(self.kill_btn, "Immediately kill all external network connectivity")
+        
+        # Restore Switch
+        self.restore_btn = ctk.CTkButton(btn_frame, text="✅ RESTORE INTERNET", font=self.FONT_BUTTON, 
+                                          fg_color=MY_PRIMARY, hover_color="#8AB4F8", text_color=MY_ON_PRIMARY,
+                                          command=self.restore_internet, width=250, height=45, corner_radius=22)
         self.restore_btn.pack(side="left", padx=10)
 
     # ==========================
@@ -842,30 +930,36 @@ class ned(ctk.CTk):
         self.tab_apps.grid_columnconfigure((0, 1), weight=1)
         self.tab_apps.grid_rowconfigure(2, weight=1)
         
-        # Controls
-        self.control_frame = ctk.CTkFrame(self.tab_apps, fg_color="transparent")
-        self.control_frame.grid(row=0, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+        # App Manager Top Bar
+        top_frame = ctk.CTkFrame(self.tab_apps, fg_color="transparent")
+        top_frame.pack(fill="x", padx=10, pady=5)
         
-        self.refresh_btn = ctk.CTkButton(self.control_frame, text="🔄 Refresh Lists", font=self.FONT_BUTTON, command=self.refresh_all_apps)
-        self.refresh_btn.pack(side="left", padx=0, pady=10)
+        self.refresh_btn = ctk.CTkButton(top_frame, text="🔄 Refresh List", font=self.FONT_BUTTON, fg_color=MY_PRIMARY, text_color=MY_ON_PRIMARY, hover_color="#8AB4F8", corner_radius=20,
+                       command=self.refresh_all_apps)
+        self.refresh_btn.pack(side="left", padx=5)
+                       
+        search_entry = ctk.CTkEntry(top_frame, textvariable=self.app_filter_var, 
+                                     placeholder_text="🔍 Search apps...", width=250, corner_radius=20, border_color=MY_SURFACE_HIGH, fg_color=MY_SURFACE)
+        search_entry.pack(side="right", padx=5)
         
-        ctk.CTkLabel(self.control_frame, text="⚠️ Admin Required", font=self.FONT_BODY, text_color="orange").pack(side="right", padx=10)
+        # Frames for lists
+        lists_frame = ctk.CTkFrame(self.tab_apps, fg_color="transparent")
+        lists_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        lists_frame.grid_columnconfigure((0, 1), weight=1)
 
-        # Search / Filter
-        search_frame = ctk.CTkFrame(self.tab_apps, fg_color="transparent")
-        search_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=(0, 5), sticky="ew")
-        
-        ctk.CTkLabel(search_frame, text="🔍", font=self.FONT_BODY).pack(side="left", padx=(10, 5))
-        self.app_search_entry = ctk.CTkEntry(search_frame, placeholder_text="Filter by process name...",
-                                              textvariable=self.app_filter_var, width=300)
-        self.app_search_entry.pack(side="left", padx=5)
+        # Active Apps Window
+        active_frame = ctk.CTkFrame(lists_frame, fg_color=MY_BG)
+        active_frame.grid(row=0, column=0, padx=(0, 10), sticky="nsew")
+        ctk.CTkLabel(active_frame, text="🟢 Active Applications", font=self.FONT_SUBHEAD, text_color=MY_SUCCESS).pack(pady=10)
+        self.active_scroll = ctk.CTkScrollableFrame(active_frame, fg_color=MY_SURFACE, corner_radius=16)
+        self.active_scroll.pack(fill="both", expand=True, padx=5, pady=5)
 
-        # Lists
-        self.active_frame = ctk.CTkScrollableFrame(self.tab_apps, label_text="🟢 Active Data Hogs")
-        self.active_frame.grid(row=2, column=0, padx=(10, 5), pady=10, sticky="nsew")
-
-        self.blocked_frame = ctk.CTkScrollableFrame(self.tab_apps, label_text="🔴 Blocked / Jailed")
-        self.blocked_frame.grid(row=2, column=1, padx=(5, 10), pady=10, sticky="nsew")
+        # Blocked Rules Window
+        blocked_frame = ctk.CTkFrame(lists_frame, fg_color=MY_BG)
+        blocked_frame.grid(row=0, column=1, padx=(10, 0), sticky="nsew")
+        ctk.CTkLabel(blocked_frame, text="🛑 Blocked Applications", font=self.FONT_SUBHEAD, text_color=MY_ERROR).pack(pady=10)
+        self.blocked_scroll = ctk.CTkScrollableFrame(blocked_frame, fg_color=MY_SURFACE, corner_radius=16)
+        self.blocked_scroll.pack(fill="both", expand=True, padx=5, pady=5)
 
     def refresh_all_apps(self):
         """Refresh both active and blocked app lists in a background thread."""
@@ -915,17 +1009,17 @@ class ned(ctk.CTk):
         self._render_active_apps(active_apps)
 
         # Render blocked apps
-        for w in self.blocked_frame.winfo_children():
+        for w in self.blocked_scroll.winfo_children():
             w.destroy()
         
         if not blocked_rules:
-            ctk.CTkLabel(self.blocked_frame, text="No apps blocked.", font=self.FONT_BODY, text_color="gray").pack(pady=20)
+            ctk.CTkLabel(self.blocked_scroll, text="No apps blocked.", font=self.FONT_BODY, text_color=MY_TEXT_MUTED).pack(pady=20)
         else:
             for rule_name, app_name in blocked_rules:
-                f = ctk.CTkFrame(self.blocked_frame, fg_color="#3d0000", corner_radius=6)
+                f = ctk.CTkFrame(self.blocked_scroll, fg_color="#3d0000", corner_radius=12)
                 f.pack(fill="x", pady=4, padx=5)
                 ctk.CTkLabel(f, text=f"🔒 {app_name}", font=self.FONT_BODY, text_color="#ffcccc").pack(side="left", padx=10, pady=10)
-                ctk.CTkButton(f, text="UNBLOCK", width=70, font=("Segoe UI", 11, "bold"), fg_color="#2eb82e", hover_color="#238f23",
+                ctk.CTkButton(f, text="UNBLOCK", width=70, font=("Segoe UI", 11, "bold"), fg_color="#2eb82e", hover_color="#238f23", corner_radius=15,
                               command=lambda r=rule_name: self.unblock_app(r)).pack(side="right", padx=10)
 
         count = len(active_apps)
@@ -933,7 +1027,7 @@ class ned(ctk.CTk):
 
     def _render_active_apps(self, active_apps):
         """Render the active apps list, applying search filter."""
-        for w in self.active_frame.winfo_children():
+        for w in self.active_scroll.winfo_children():
             w.destroy()
 
         filter_text = self.app_filter_var.get().lower().strip()
@@ -943,20 +1037,23 @@ class ned(ctk.CTk):
 
         if not filtered:
             msg = "No matches found." if filter_text else "No active connections found."
-            ctk.CTkLabel(self.active_frame, text=msg, font=self.FONT_BODY, text_color="gray").pack(pady=20)
+            ctk.CTkLabel(self.active_scroll, text=msg, font=self.FONT_BODY, text_color=MY_TEXT_MUTED).pack(pady=20)
             return
 
         for name, p_obj in filtered.items():
-            f = ctk.CTkFrame(self.active_frame, fg_color="#2b2b2b", corner_radius=6)
+            f = ctk.CTkFrame(self.active_scroll, fg_color=MY_SURFACE, border_width=1, border_color=MY_SURFACE_HIGH, corner_radius=12)
             f.pack(fill="x", pady=4, padx=5)
             
-            ctk.CTkLabel(f, text=f"📦 {name}", font=self.FONT_BODY).pack(side="left", padx=10, pady=10)
+            ctk.CTkLabel(f, text=f"📦 {name}", font=self.FONT_BODY, text_color=MY_TEXT).pack(side="left", padx=10, pady=10)
             
             btn_frame = ctk.CTkFrame(f, fg_color="transparent")
-            btn_frame.pack(side="right", padx=5)
+            btn_frame.pack(side="right", padx=10)
 
             ctk.CTkButton(btn_frame, text="DETAILS", width=60, font=("Segoe UI", 10), fg_color="#444444", hover_color="#666666",
                           command=lambda p=p_obj: self.show_process_details(p)).pack(side="left", padx=2)
+            
+            ctk.CTkButton(btn_frame, text="KILL", width=60, font=("Segoe UI", 11, "bold"), fg_color=MY_ERROR, text_color="#3B0000", hover_color="#D99B94", corner_radius=15,
+                          command=lambda p=p_obj: self.kill_app(p)).pack(side="left", padx=5)
             
             path = ""
             try:
@@ -964,8 +1061,8 @@ class ned(ctk.CTk):
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
             
-            ctk.CTkButton(btn_frame, text="BLOCK", width=60, font=("Segoe UI", 10, "bold"), fg_color="#ff9900", hover_color="#b36b00",
-                          command=lambda n=name, p=path: self.block_app(n, p)).pack(side="left", padx=2)
+            ctk.CTkButton(btn_frame, text="BLOCK", width=60, font=("Segoe UI", 11, "bold"), fg_color="#e65c00", text_color="white", hover_color="#cc5200", corner_radius=15,
+                          command=lambda n=name, p=path: self.block_app(n, p)).pack(side="left", padx=5)
 
     def _apply_app_filter(self):
         """Re-render active apps list when the search filter changes."""
@@ -1044,17 +1141,17 @@ class ned(ctk.CTk):
         top_bar = ctk.CTkFrame(self.tab_conn, fg_color="transparent")
         top_bar.grid(row=0, column=0, sticky="ew", padx=10, pady=5)
         
-        ctk.CTkButton(top_bar, text="🔄 Refresh Table", font=self.FONT_BUTTON, command=self.get_conns).pack(side="left")
-        ctk.CTkButton(top_bar, text="💾 Export CSV", font=self.FONT_BUTTON, fg_color="#444444", command=lambda: self.export_data("connections")).pack(side="left", padx=10)
+        ctk.CTkButton(top_bar, text="🔄 Refresh Table", font=self.FONT_BUTTON, fg_color=MY_PRIMARY, text_color=MY_ON_PRIMARY, hover_color="#8AB4F8", corner_radius=20, command=self.get_conns).pack(side="left")
+        ctk.CTkButton(top_bar, text="💾 Export CSV", font=self.FONT_BUTTON, fg_color=MY_SURFACE_HIGH, text_color=MY_TEXT, hover_color="#3A4249", corner_radius=20, command=lambda: self.export_data("connections")).pack(side="left", padx=10)
         
         # Headers (clickable for sorting)
-        self.conn_header_frame = ctk.CTkFrame(self.tab_conn, height=30, fg_color="#1a1a1a")
+        self.conn_header_frame = ctk.CTkFrame(self.tab_conn, height=30, fg_color=MY_SURFACE, corner_radius=8)
         self.conn_header_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(5,0))
         
         conn_headers = [("LOCAL PORT", 80, 0), ("REMOTE IP", 140, 1), ("GEO / ISP", 200, 2), ("STATUS", 100, 3), ("PID", 60, 4)]
         for text, width, col_idx in conn_headers:
             btn = ctk.CTkButton(self.conn_header_frame, text=f"{text} ↕", width=width, height=25,
-                                font=("Segoe UI", 11, "bold"), fg_color="#1a1a1a", hover_color="#333333",
+                                font=("Segoe UI", 11, "bold"), fg_color="transparent", text_color=MY_SECONDARY, hover_color=MY_SURFACE_HIGH,
                                 anchor="w", command=lambda c=col_idx: self.sort_connections(c))
             btn.pack(side="left", padx=5)
 
@@ -1112,21 +1209,22 @@ class ned(ctk.CTk):
             self.current_conns_data.append([str(c.laddr.port), remote, geo_info, c.status, str(c.pid)])
 
             # UI Card
-            card = ctk.CTkFrame(self.conn_scroll, fg_color="#2b2b2b")
-            card.pack(fill="x", pady=2)
+            card = ctk.CTkFrame(self.conn_scroll, fg_color=MY_SURFACE, corner_radius=12)
+            card.pack(fill="x", pady=4, padx=4)
             
-            self.create_selectable_label(card, str(c.laddr.port), 80, "#00ccff")
-            self.create_selectable_label(card, str(remote), 140, "white")
+            self.create_selectable_label(card, str(c.laddr.port), 80, MY_PRIMARY)
+            self.create_selectable_label(card, str(remote), 140, MY_TEXT)
             
             # Dynamic Label for Geo that can update
-            geo_lbl = ctk.CTkLabel(card, text=geo_info, width=200, anchor="w", font=self.FONT_MONO, text_color="#aaaaaa")
-            geo_lbl.pack(side="left", padx=5)
+            geo_lbl = ctk.CTkLabel(card, text=geo_info, width=200, anchor="w", font=self.FONT_MONO, text_color=MY_TEXT_MUTED)
+            geo_lbl.pack(side="left", padx=5, pady=8)
             # Store ref to update later
             if geo_info == "...":
                  self.pending_geo_labels[r_ip].append(geo_lbl)
 
-            ctk.CTkLabel(card, text=c.status, width=100, font=self.FONT_MONO, anchor="w", text_color="#00ff00").pack(side="left", padx=5)
-            self.create_selectable_label(card, str(c.pid), 60, "gray")
+            status_color = MY_SUCCESS if c.status == 'ESTABLISHED' else MY_TEXT_MUTED
+            ctk.CTkLabel(card, text=c.status, width=100, font=self.FONT_MONO, anchor="w", text_color=status_color).pack(side="left", padx=5)
+            self.create_selectable_label(card, str(c.pid), 60, MY_TEXT_MUTED)
 
         self.set_status(f"✅ Found {len(connections)} established connections.")
 
@@ -1148,16 +1246,22 @@ class ned(ctk.CTk):
         # Re-render
         for w in self.conn_scroll.winfo_children(): w.destroy()
         for row in self.current_conns_data:
-            card = ctk.CTkFrame(self.conn_scroll, fg_color="#2b2b2b")
-            card.pack(fill="x", pady=2)
-            colors = ["#00ccff", "white", "#aaaaaa", "#00ff00", "gray"]
-            widths = [80, 140, 200, 100, 60]
-            for i, val in enumerate(row):
-                if i == 2 or i == 3:
-                    ctk.CTkLabel(card, text=val, width=widths[i], font=self.FONT_MONO, anchor="w",
-                                 text_color=colors[i]).pack(side="left", padx=5)
-                else:
-                    self.create_selectable_label(card, val, widths[i], colors[i])
+            card = ctk.CTkFrame(self.conn_scroll, fg_color=MY_SURFACE, corner_radius=12)
+            card.pack(fill="x", pady=4, padx=4)
+            
+            # Re-create labels based on the sorted data
+            # Assuming the order of columns is consistent with render_connections
+            l_port, remote, geo_info, status, pid = row
+            
+            self.create_selectable_label(card, l_port, 80, MY_PRIMARY)
+            self.create_selectable_label(card, remote, 140, MY_TEXT)
+            
+            # Geo label (will not update dynamically after sort, as geo_info is already resolved)
+            ctk.CTkLabel(card, text=geo_info, width=200, anchor="w", font=self.FONT_MONO, text_color=MY_TEXT_MUTED).pack(side="left", padx=5, pady=8)
+
+            status_color = MY_SUCCESS if status == 'ESTABLISHED' else MY_TEXT_MUTED
+            ctk.CTkLabel(card, text=status, width=100, font=self.FONT_MONO, anchor="w", text_color=status_color).pack(side="left", padx=5)
+            self.create_selectable_label(card, pid, 60, MY_TEXT_MUTED)
         
         direction = "▼" if self.conns_sort_reverse else "▲"
         self.set_status(f"Sorted connections by column {col_idx + 1} {direction}")
@@ -1194,17 +1298,17 @@ class ned(ctk.CTk):
 
         top = ctk.CTkFrame(self.tab_scan, fg_color="transparent")
         top.grid(row=0, column=0, pady=20)
-        ctk.CTkButton(top, text="📡 Scan Local Network (ARP)", font=self.FONT_BUTTON, command=self.run_scan).pack(side="left", padx=10)
-        ctk.CTkButton(top, text="💾 Export CSV", font=self.FONT_BUTTON, fg_color="#444444", command=lambda: self.export_data("scanner")).pack(side="left", padx=10)
+        ctk.CTkButton(top, text="📡 Scan Local Network (ARP)", font=self.FONT_BUTTON, fg_color=MY_PRIMARY, text_color=MY_ON_PRIMARY, hover_color="#8AB4F8", corner_radius=20, command=self.run_scan).pack(side="left", padx=10)
+        ctk.CTkButton(top, text="💾 Export CSV", font=self.FONT_BUTTON, fg_color=MY_SURFACE_HIGH, text_color=MY_TEXT, hover_color="#3A4249", corner_radius=20, command=lambda: self.export_data("scanner")).pack(side="left", padx=10)
         
         # Headers (clickable for sorting)
-        self.scan_header_frame = ctk.CTkFrame(self.tab_scan, height=30, fg_color="#1a1a1a")
+        self.scan_header_frame = ctk.CTkFrame(self.tab_scan, height=30, fg_color=MY_SURFACE, corner_radius=8)
         self.scan_header_frame.grid(row=1, column=0, sticky="ew", padx=20)
         
         scan_headers = [("IP ADDRESS", 200, 0), ("MAC ADDRESS", 200, 1), ("TYPE", 100, 2)]
         for text, width, col_idx in scan_headers:
             btn = ctk.CTkButton(self.scan_header_frame, text=f"{text} ↕", width=width, height=25,
-                                font=("Segoe UI", 11, "bold"), fg_color="#1a1a1a", hover_color="#333333",
+                                font=("Segoe UI", 11, "bold"), fg_color="transparent", text_color=MY_SECONDARY, hover_color=MY_SURFACE_HIGH,
                                 anchor="w", command=lambda c=col_idx: self.sort_scanner(c))
             btn.pack(side="left", padx=20)
 
@@ -1240,16 +1344,16 @@ class ned(ctk.CTk):
             ctk.CTkLabel(self.scan_scroll, text=f"Scan failed: {e}", text_color="red").pack(pady=20)
             self.set_status("❌ LAN scan failed.")
 
-    def _render_scan_card(self, ip, mac, type_):
+    def _render_scan_card(self, ip, mac, typ):
         """Render a single scan result card."""
-        card = ctk.CTkFrame(self.scan_scroll, fg_color="#2b2b2b")
-        card.pack(fill="x", pady=3)
+        card = ctk.CTkFrame(self.scan_scroll, fg_color=MY_SURFACE, corner_radius=12)
+        card.pack(fill="x", pady=4, padx=4)
         
-        icon = "🖥️" if type_ == 'dynamic' else "⚙️"
+        self.create_selectable_label(card, ip, 200, MY_PRIMARY)
+        self.create_selectable_label(card, mac, 200, MY_TEXT)
         
-        self.create_selectable_label(card, f"{icon} {ip}", 200, "#00ccff")
-        self.create_selectable_label(card, mac, 200, "white")
-        ctk.CTkLabel(card, text=type_.upper(), width=100, font=self.FONT_MONO, anchor="w", text_color="gray").pack(side="left", padx=20)
+        color = MY_SUCCESS if typ == "dynamic" else MY_TEXT_MUTED
+        ctk.CTkLabel(card, text=typ, width=100, font=self.FONT_MONO, text_color=color, anchor="w").pack(side="left", padx=20)
 
     def sort_scanner(self, col_idx):
         """Sort scanner data by the clicked column."""
@@ -1282,17 +1386,17 @@ class ned(ctk.CTk):
         btn_frame.grid(row=0, column=0, pady=30)
 
         self.st_btn = ctk.CTkButton(btn_frame, text="🚀 START SPEED TEST", font=("Segoe UI", 16, "bold"), 
-                                    height=50, width=250, command=self.run_speedtest_thread)
+                                    height=50, width=250, fg_color=MY_PRIMARY, text_color=MY_ON_PRIMARY, hover_color="#8AB4F8", corner_radius=25, command=self.run_speedtest_thread)
         self.st_btn.pack()
 
         # Progress Bar
-        self.st_progress = ctk.CTkProgressBar(btn_frame, width=250, mode="indeterminate")
-        self.st_progress.pack(pady=(10, 0))
+        self.st_progress = ctk.CTkProgressBar(btn_frame, width=250, mode="indeterminate", progress_color=MY_PRIMARY)
+        self.st_progress.pack(pady=(15, 0))
         self.st_progress.set(0)
 
-        # Results Grid
-        res_frame = ctk.CTkFrame(self.tab_speed, fg_color="#2b2b2b")
-        res_frame.grid(row=2, column=0, padx=50, pady=(0, 50), sticky="nsew")
+        # Results Grid Card
+        res_frame = ctk.CTkFrame(self.tab_speed, fg_color=MY_SURFACE, corner_radius=24)
+        res_frame.grid(row=2, column=0, padx=60, pady=(0, 60), sticky="nsew")
         res_frame.grid_columnconfigure((0,1,2), weight=1)
         res_frame.grid_rowconfigure(0, weight=1)
 
@@ -1303,8 +1407,8 @@ class ned(ctk.CTk):
     def create_stat_box(self, parent, title, value, col):
         f = ctk.CTkFrame(parent, fg_color="transparent")
         f.grid(row=0, column=col)
-        ctk.CTkLabel(f, text=title, font=("Segoe UI", 14), text_color="gray").pack()
-        lbl = ctk.CTkLabel(f, text=value, font=("Segoe UI", 28, "bold"), text_color="#00ccff")
+        ctk.CTkLabel(f, text=title, font=("Segoe UI", 14), text_color=MY_TEXT_MUTED).pack()
+        lbl = ctk.CTkLabel(f, text=value, font=("Segoe UI", 28, "bold"), text_color=MY_PRIMARY)
         lbl.pack()
         return lbl
 
@@ -1371,7 +1475,7 @@ class ned(ctk.CTk):
         interface_options = ["All Interfaces"] + interfaces
         self.iface_var = ctk.StringVar(value="All Interfaces")
         self.iface_menu = ctk.CTkOptionMenu(scroll, values=interface_options, variable=self.iface_var,
-                                             command=self._change_interface, width=250)
+                                             command=self._change_interface, width=250, fg_color=MY_SURFACE, button_color=MY_SURFACE_HIGH, button_hover_color="#3A4249", corner_radius=16)
         self.iface_menu.pack(anchor="w")
 
         # --- System Tray ---
@@ -1385,7 +1489,7 @@ class ned(ctk.CTk):
         # --- Performance ---
         ctk.CTkLabel(scroll, text="Update Interval (ms)", font=self.FONT_SUBHEAD).pack(anchor="w", pady=(20, 10))
         
-        self.slider = ctk.CTkSlider(scroll, from_=500, to=5000, number_of_steps=9, command=self.change_interval)
+        self.slider = ctk.CTkSlider(scroll, from_=500, to=5000, number_of_steps=9, command=self.change_interval, button_color=MY_PRIMARY, button_hover_color="#8AB4F8", progress_color=MY_PRIMARY)
         self.slider.set(1000)
         self.slider.pack(anchor="w", fill="x")
         self.lbl_interval = ctk.CTkLabel(scroll, text="1000 ms")
@@ -1402,35 +1506,35 @@ class ned(ctk.CTk):
         alert_grid.pack(anchor="w", fill="x", pady=(10, 0))
         
         ctk.CTkLabel(alert_grid, text="Session total limit (MB):", font=self.FONT_BODY).grid(row=0, column=0, sticky="w", pady=3)
-        self.alert_session_entry = ctk.CTkEntry(alert_grid, width=80, placeholder_text="500")
+        self.alert_session_entry = ctk.CTkEntry(alert_grid, width=80, placeholder_text="500", fg_color=MY_SURFACE, border_color=MY_SURFACE_HIGH, corner_radius=16)
         self.alert_session_entry.insert(0, "500")
-        self.alert_session_entry.grid(row=0, column=1, padx=10, pady=3)
+        self.alert_session_entry.grid(row=0, column=1, padx=10, pady=5)
         
         ctk.CTkLabel(alert_grid, text="Speed limit (MB/s):", font=self.FONT_BODY).grid(row=1, column=0, sticky="w", pady=3)
-        self.alert_speed_entry = ctk.CTkEntry(alert_grid, width=80, placeholder_text="10")
+        self.alert_speed_entry = ctk.CTkEntry(alert_grid, width=80, placeholder_text="10", fg_color=MY_SURFACE, border_color=MY_SURFACE_HIGH, corner_radius=16)
         self.alert_speed_entry.insert(0, "10")
-        self.alert_speed_entry.grid(row=1, column=1, padx=10, pady=3)
+        self.alert_speed_entry.grid(row=1, column=1, padx=10, pady=5)
         
-        ctk.CTkButton(alert_grid, text="Apply", width=60, font=("Segoe UI", 11),
+        ctk.CTkButton(alert_grid, text="Apply", width=60, font=("Segoe UI", 11), fg_color=MY_SURFACE_HIGH, text_color=MY_TEXT, hover_color="#3A4249", corner_radius=20,
                        command=self._apply_alert_settings).grid(row=0, column=2, rowspan=2, padx=10)
 
         # --- Session ---
-        sep1 = ctk.CTkFrame(scroll, height=2, fg_color="#444444")
+        sep1 = ctk.CTkFrame(scroll, height=2, fg_color=MY_SURFACE_HIGH)
         sep1.pack(fill="x", pady=20)
         
         ctk.CTkLabel(scroll, text="Session", font=self.FONT_SUBHEAD).pack(anchor="w", pady=(0, 10))
         
         ctk.CTkButton(scroll, text="🔄 Reset Session Totals", font=self.FONT_BUTTON, 
-                       fg_color="#444444", hover_color="#555555", width=200,
+                       fg_color=MY_SURFACE_HIGH, text_color=MY_TEXT, hover_color="#3A4249", corner_radius=20, width=200,
                        command=self.reset_session_totals).pack(anchor="w")
 
         # --- About ---
-        sep2 = ctk.CTkFrame(scroll, height=2, fg_color="#444444")
+        sep2 = ctk.CTkFrame(scroll, height=2, fg_color=MY_SURFACE_HIGH)
         sep2.pack(fill="x", pady=20)
         
         ctk.CTkLabel(scroll, text="About", font=self.FONT_SUBHEAD).pack(anchor="w", pady=(0, 10))
         
-        about_frame = ctk.CTkFrame(scroll, fg_color="#2b2b2b", corner_radius=8)
+        about_frame = ctk.CTkFrame(scroll, fg_color=MY_SURFACE, corner_radius=16)
         about_frame.pack(fill="x", pady=5)
 
         about_items = [
